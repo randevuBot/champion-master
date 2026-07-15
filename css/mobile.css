@@ -1,0 +1,667 @@
+/* ═══════════════════════════════════════════════════════════════
+   ChampionMaster — Mobile Responsive (mobile.css)
+   Tüm ekranlar için sıfırdan yazılmış tam mobil uyum.
+   Breakpoints: 1200px (tablet-lg), 992px (tablet), 768px (mobile), 480px (small)
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ────────────────────── TABLET LARGE (≤1200px) ────────────────────── */
+@media (max-width: 1200px) {
+  .dashboard-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+  .dash-card.span-3 { grid-column: span 2; }
+
+  .finance-kpi-row { grid-template-columns: 1fr 1fr !important; }
+  .finance-mid-row { grid-template-columns: 1fr 1fr !important; }
+  .finance-mid-row > :last-child { grid-column: 1 / -1; }
+}
+
+/* ────────────────────── TABLET (≤992px) ────────────────────── */
+@media (max-width: 992px) {
+  /* Sidebar daralt */
+  .sidebar {
+    width: 200px;
+    min-width: 200px;
+  }
+  .main-content {
+    margin-left: 200px;
+  }
+
+  /* Grids */
+  .dashboard-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+  .dash-card.span-2, .dash-card.span-3 { grid-column: span 1; }
+
+  /* Tactics */
+  .tactics-layout {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Inbox */
+  #page-inbox > div {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Squad */
+  .players-grid {
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)) !important;
+  }
+
+  /* Transfer table horizontal scroll */
+  .transfer-table { font-size: 12px; }
+
+  /* Club Select */
+  .club-select-layout {
+    flex-direction: column !important;
+  }
+  .club-preview-panel {
+    width: 100% !important;
+    min-width: 100% !important;
+    border-left: none !important;
+    border-top: 1px solid var(--border);
+  }
+
+  /* Match */
+  .match-sim-layout {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* ────────────────────── MOBILE (≤768px) ────────────────────── */
+@media (max-width: 768px) {
+
+  /* ═══════ SIDEBAR → BOTTOM TAB BAR ═══════ */
+  .sidebar {
+    width: 100% !important;
+    min-width: 100% !important;
+    height: auto;
+    max-height: 64px;
+    position: fixed;
+    top: auto !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0;
+    flex-direction: row !important;
+    border-right: none !important;
+    border-top: 1px solid var(--border);
+    padding: 0;
+    z-index: 200;
+    overflow: hidden;
+    background: var(--bg-secondary);
+  }
+
+  /* Sidebar üst kısımları mobilde gizle */
+  .sidebar-logo,
+  .sidebar-club,
+  .sidebar-bottom,
+  .nav-section-title {
+    display: none !important;
+  }
+
+  /* Nav items → horizontal tab bar */
+  .sidebar-nav {
+    display: flex !important;
+    flex-direction: row !important;
+    width: 100%;
+    padding: 0 !important;
+    gap: 0 !important;
+    overflow-x: auto;
+    overflow-y: hidden !important;
+    align-items: stretch;
+    flex: 1;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .sidebar-nav::-webkit-scrollbar { display: none; }
+
+  .nav-item {
+    flex: 0 0 auto;
+    min-width: 64px;
+    padding: 8px 6px !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+    align-items: center !important;
+    gap: 2px !important;
+    border-radius: 0 !important;
+    margin: 0 !important;
+    font-size: 10px !important;
+    text-align: center;
+  }
+  .nav-item::before {
+    /* Üst çizgi yerine alt çizgi */
+    left: 0 !important; right: 0 !important;
+    top: 0 !important; bottom: auto !important;
+    width: auto !important;
+    height: 3px !important;
+    border-radius: 0 0 3px 3px !important;
+    transform: scaleX(0) !important;
+  }
+  .nav-item.active::before {
+    transform: scaleX(1) !important;
+  }
+  .nav-item:hover {
+    background: transparent !important;
+  }
+  .nav-item.active {
+    background: rgba(0,200,255,0.08) !important;
+  }
+  .nav-icon {
+    font-size: 20px !important;
+    margin-right: 0 !important;
+    min-width: auto !important;
+  }
+  /* Nav item text: sadece ikon altındaki kısa ismi göster */
+  .nav-item > span:not(.nav-icon):not(.nav-badge) {
+    font-size: 9px !important;
+    line-height: 1.1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 56px;
+  }
+  .nav-badge {
+    position: absolute !important;
+    top: 2px !important;
+    right: 4px !important;
+    margin: 0 !important;
+    font-size: 9px !important;
+    padding: 1px 4px !important;
+  }
+
+  /* ═══════ MAIN CONTENT ═══════ */
+  .main-content {
+    margin-left: 0 !important;
+    margin-bottom: 64px; /* Bottom tab bar boşluğu */
+    min-height: calc(100vh - 64px);
+  }
+
+  /* ═══════ TOPBAR ═══════ */
+  .topbar {
+    padding: 0 12px !important;
+    height: 52px !important;
+    gap: 8px;
+  }
+  .topbar-title {
+    font-size: 15px !important;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 120px;
+  }
+  .topbar-date { display: none !important; }
+  .topbar .btn-sm {
+    padding: 6px 10px !important;
+    font-size: 11px !important;
+  }
+
+  /* ═══════ PAGE CONTENT ═══════ */
+  .page {
+    padding: 16px !important;
+  }
+  .page-title {
+    font-size: 22px !important;
+    margin-bottom: 4px !important;
+  }
+  .page-subtitle {
+    font-size: 12px !important;
+    margin-bottom: 16px !important;
+  }
+
+  /* ═══════ DASHBOARD ═══════ */
+  .dashboard-grid {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+  }
+  .dash-card {
+    padding: 16px !important;
+    border-radius: 12px !important;
+  }
+  .dash-card.span-2,
+  .dash-card.span-3 {
+    grid-column: span 1 !important;
+  }
+  .next-match {
+    flex-direction: column !important;
+    gap: 12px !important;
+    text-align: center;
+  }
+  .match-team {
+    flex-direction: column !important;
+  }
+  .match-center { margin: 0 !important; }
+
+  /* ═══════ SQUAD ═══════ */
+  .squad-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px !important;
+    margin-bottom: 16px !important;
+  }
+  .squad-filters .filter-btn {
+    padding: 6px 12px !important;
+    font-size: 11px !important;
+    flex: 1;
+    min-width: 60px;
+    text-align: center;
+  }
+  .players-grid {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 8px !important;
+  }
+
+  /* ═══════ TACTICS ═══════ */
+  .tactics-layout {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 16px !important;
+  }
+  .pitch-container {
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 12px !important;
+  }
+  .pitch {
+    padding-bottom: 140% !important;
+  }
+
+  /* ═══════ TRANSFERS ═══════ */
+  .transfer-filters {
+    display: flex;
+    flex-direction: column !important;
+    gap: 8px !important;
+  }
+  .transfer-filters .search-input,
+  .transfer-filters .select-input {
+    width: 100% !important;
+  }
+  .transfer-table {
+    font-size: 11px !important;
+  }
+  .transfer-table th,
+  .transfer-table td {
+    padding: 8px 6px !important;
+    white-space: nowrap;
+  }
+
+  /* ═══════ CALENDAR ═══════ */
+  #page-calendar .btn {
+    width: 100%;
+    margin-bottom: 8px;
+  }
+
+  /* ═══════ INBOX ═══════ */
+  #page-inbox > div {
+    grid-template-columns: 1fr !important;
+    min-height: auto !important;
+  }
+  #inbox-detail {
+    display: none !important;
+  }
+
+  /* ═══════ FINANCE ═══════ */
+  .finance-kpi-row {
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+  .finance-kpi-card {
+    padding: 14px 16px !important;
+  }
+  .kpi-value {
+    font-size: 18px !important;
+  }
+  .finance-mid-row {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+  }
+  .proj-grid {
+    flex-direction: column !important;
+  }
+  .proj-divider {
+    width: 100% !important;
+    height: 1px !important;
+    margin: 8px 0 !important;
+  }
+  .proj-amount {
+    font-size: 16px !important;
+  }
+  .fin-report-table {
+    font-size: 11px !important;
+  }
+  .fin-report-table th,
+  .fin-report-table td {
+    padding: 8px 6px !important;
+  }
+
+  /* ═══════ MATCH SIMULATION ═══════ */
+  .match-sim-layout {
+    grid-template-columns: 1fr !important;
+    grid-template-rows: auto auto !important;
+    gap: 12px !important;
+  }
+  .match-scoreboard {
+    padding: 16px !important;
+  }
+  .scoreboard-teams {
+    flex-direction: row !important;
+    gap: 8px !important;
+  }
+  .sb-score {
+    font-size: 36px !important;
+  }
+  .sb-team .name {
+    font-size: 12px !important;
+  }
+  .match-events {
+    max-height: 300px !important;
+    overflow-y: auto;
+  }
+
+  /* ═══════ MODALS ═══════ */
+  .modal-overlay {
+    padding: 8px !important;
+    align-items: flex-end !important;
+  }
+  .modal {
+    max-width: 100% !important;
+    width: 100% !important;
+    max-height: 90vh !important;
+    border-radius: 16px 16px 0 0 !important;
+    margin: 0 !important;
+  }
+  .modal-header {
+    padding: 14px 16px !important;
+  }
+  .modal-header h3 {
+    font-size: 16px !important;
+  }
+  .modal-body {
+    padding: 16px !important;
+    overflow-y: auto;
+    max-height: calc(90vh - 56px);
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Player Detail Modal specifics */
+  .player-detail-top {
+    flex-direction: column !important;
+    gap: 16px !important;
+  }
+  .player-detail-card-wrap {
+    width: 100% !important;
+    max-width: 200px;
+    margin: 0 auto;
+  }
+  .player-detail-info {
+    width: 100% !important;
+  }
+  .player-meta-tags {
+    flex-wrap: wrap;
+    gap: 6px !important;
+  }
+  .meta-tag {
+    font-size: 10px !important;
+    padding: 4px 8px !important;
+  }
+  .stat-hexagon {
+    gap: 8px !important;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .hex-stat {
+    width: 48px !important;
+    height: 48px !important;
+  }
+  .sub-stats-grid {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 8px !important;
+  }
+
+  /* ═══════ MENU SCREEN ═══════ */
+  .menu-container {
+    grid-template-columns: 1fr !important;
+  }
+  .menu-left {
+    padding: 32px 20px !important;
+    text-align: center;
+  }
+  .menu-logo h1 {
+    font-size: 36px !important;
+  }
+  .menu-tagline {
+    font-size: 14px !important;
+    margin: 16px auto 0 !important;
+  }
+  .menu-buttons {
+    margin-top: 32px !important;
+  }
+  .menu-stats-row {
+    justify-content: center;
+    margin-top: 32px !important;
+    gap: 24px !important;
+  }
+  .menu-right {
+    padding: 24px 20px !important;
+    border-left: none !important;
+    border-top: 1px solid var(--border);
+  }
+
+  /* ═══════ SETUP SCREEN ═══════ */
+  .setup-wrapper {
+    padding: 16px !important;
+  }
+  .setup-card {
+    padding: 24px 16px !important;
+  }
+  .setup-header h2 {
+    font-size: 24px !important;
+  }
+  .difficulty-row {
+    grid-template-columns: 1fr !important;
+    gap: 8px !important;
+  }
+  .setup-footer {
+    flex-direction: column !important;
+    gap: 8px !important;
+  }
+  .setup-footer .btn {
+    width: 100%;
+  }
+
+  /* ═══════ CLUB SELECT ═══════ */
+  .club-select-header {
+    padding: 16px !important;
+    flex-direction: column !important;
+    gap: 12px !important;
+  }
+  .club-select-header .btn {
+    width: 100%;
+  }
+  .league-tabs {
+    padding: 12px 16px 0 !important;
+    gap: 0 !important;
+  }
+  .league-tab {
+    padding: 8px 14px !important;
+    font-size: 12px !important;
+  }
+  .clubs-grid {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 10px !important;
+    padding: 16px !important;
+  }
+  .club-card {
+    padding: 16px 10px !important;
+  }
+  .club-badge {
+    width: 56px !important;
+    height: 56px !important;
+    font-size: 24px !important;
+  }
+  .club-name {
+    font-size: 13px !important;
+  }
+
+  /* ═══════ RESULT SCREEN ═══════ */
+  .result-card {
+    padding: 20px 16px !important;
+  }
+  .result-score-block {
+    flex-direction: column !important;
+    padding: 16px !important;
+    gap: 12px !important;
+  }
+  .result-score {
+    font-size: 36px !important;
+  }
+
+  /* ═══════ BUTTONS ═══════ */
+  .btn-lg {
+    padding: 14px 24px !important;
+    font-size: 14px !important;
+  }
+
+  /* ═══════ TABLES ═══════ */
+  .league-table {
+    font-size: 11px !important;
+  }
+  .league-table th,
+  .league-table td {
+    padding: 8px 4px !important;
+  }
+
+  /* ═══════ SPLASH ═══════ */
+  .splash-logo h1 {
+    font-size: 32px !important;
+    letter-spacing: 2px !important;
+  }
+  .splash-logo .logo-icon {
+    font-size: 56px !important;
+  }
+  .splash-logo .tagline {
+    font-size: 11px !important;
+    letter-spacing: 3px !important;
+  }
+  .splash-progress {
+    width: 240px !important;
+  }
+
+  /* ═══════ CANVAS TACTICS BOARD ═══════ */
+  #tactics-canvas {
+    touch-action: none;
+  }
+
+  /* ═══════ MISC ═══════ */
+  .mt-24 { margin-top: 16px !important; }
+  .mt-16 { margin-top: 12px !important; }
+
+  /* Toast notifications */
+  .toast-container {
+    left: 8px !important;
+    right: 8px !important;
+    bottom: 72px !important; /* Above bottom tab bar */
+  }
+
+  /* Scrollbars hide on mobile */
+  ::-webkit-scrollbar {
+    width: 3px;
+  }
+}
+
+/* ────────────────────── SMALL MOBILE (≤480px) ────────────────────── */
+@media (max-width: 480px) {
+  .page-title {
+    font-size: 18px !important;
+  }
+
+  .players-grid {
+    grid-template-columns: 1fr !important;
+    gap: 8px !important;
+  }
+
+  .clubs-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .menu-logo h1 {
+    font-size: 28px !important;
+  }
+
+  .btn-lg {
+    padding: 12px 16px !important;
+    font-size: 13px !important;
+  }
+
+  .dash-card {
+    padding: 12px !important;
+  }
+
+  .stat-hexagon {
+    gap: 4px !important;
+  }
+  .hex-stat {
+    width: 42px !important;
+    height: 42px !important;
+  }
+
+  .sidebar-nav {
+    justify-content: space-around;
+  }
+  .nav-item {
+    min-width: 52px !important;
+    padding: 6px 4px !important;
+  }
+  .nav-icon {
+    font-size: 18px !important;
+  }
+  .nav-item > span:not(.nav-icon):not(.nav-badge) {
+    font-size: 8px !important;
+    max-width: 44px !important;
+  }
+
+  .kpi-value {
+    font-size: 16px !important;
+  }
+
+  /* Match screen */
+  .sb-score {
+    font-size: 28px !important;
+  }
+}
+
+/* ────────────────────── LANDSCAPE MOBILE ────────────────────── */
+@media (max-height: 500px) and (orientation: landscape) {
+  .sidebar {
+    max-height: 52px !important;
+  }
+  .nav-item {
+    padding: 4px 6px !important;
+  }
+  .nav-icon {
+    font-size: 16px !important;
+  }
+  .nav-item > span:not(.nav-icon):not(.nav-badge) {
+    display: none !important;
+  }
+  .main-content {
+    margin-bottom: 52px !important;
+  }
+  .modal {
+    max-height: 95vh !important;
+  }
+}
+
+/* ────────────────────── SAFE AREA (iPhone Notch) ────────────────────── */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  @media (max-width: 768px) {
+    .sidebar {
+      padding-bottom: env(safe-area-inset-bottom) !important;
+    }
+    .main-content {
+      margin-bottom: calc(64px + env(safe-area-inset-bottom)) !important;
+    }
+    .toast-container {
+      bottom: calc(72px + env(safe-area-inset-bottom)) !important;
+    }
+  }
+}

@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ChampionMaster - Futbol Menajerlik</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/mobile.css">
+  <style>
+    /* ═══════════ FINANCE SYSTEM STYLES ═══════════ */
+    .finance-page-inner { display:flex; flex-direction:column; gap:24px; padding-bottom:40px; }
+
+    .finance-header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px; }
+
+    /* KPI Row */
+    .finance-kpi-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+    }
+    .finance-kpi-card {
+      background: linear-gradient(135deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.02) 100%);
+      border: 1px solid rgba(255,255,255,0.10);
+      border-radius: 16px;
+      padding: 22px 20px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      backdrop-filter: blur(8px);
+      transition: transform .2s, box-shadow .2s;
+    }
+    .finance-kpi-card:hover { transform: translateY(-2px); box-shadow: 0 8px 32px rgba(0,0,0,0.3); }
+    .kpi-icon { font-size: 32px; line-height:1; }
+    .kpi-body { flex:1; }
+    .kpi-label { font-size:11px; color:var(--text-muted); text-transform:uppercase; letter-spacing:1px; margin-bottom:4px; }
+    .kpi-value { font-family:'Orbitron',sans-serif; font-size:22px; font-weight:700; line-height:1.1; }
+    .kpi-sub   { font-size:11px; color:var(--text-muted); margin-top:4px; }
+
+    /* Mid Row */
+    .finance-mid-row {
+      display: grid;
+      grid-template-columns: 1.4fr 1fr 1fr;
+      gap: 16px;
+    }
+
+    /* Glass Card */
+    .finance-glass-card {
+      background: linear-gradient(135deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.02) 100%);
+      border: 1px solid rgba(255,255,255,0.10);
+      border-radius: 16px;
+      padding: 24px;
+      backdrop-filter: blur(8px);
+    }
+    .fcard-title {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: var(--text-muted);
+      margin-bottom: 20px;
+      font-weight: 600;
+    }
+
+    /* Projection */
+    .proj-grid {
+      display: flex;
+      align-items: stretch;
+      gap: 0;
+    }
+    .proj-item {
+      flex: 1;
+      text-align: center;
+      padding: 8px;
+    }
+    .proj-label  { font-size:11px; color:var(--text-muted); margin-bottom:8px; text-transform:uppercase; letter-spacing:.8px; }
+    .proj-amount { font-family:'Orbitron',sans-serif; font-size:20px; font-weight:700; }
+    .proj-sub    { font-size:11px; color:var(--text-muted); margin-top:6px; }
+    .proj-divider { width:1px; background:rgba(255,255,255,0.1); margin:0 8px; }
+
+    /* Ratio Bar */
+    .fin-ratio-bar { display:flex; border-radius:99px; overflow:hidden; height:8px; }
+    .fin-ratio-income  { background: var(--green); }
+    .fin-ratio-expense { background: var(--red);   }
+
+    /* Stadium Stats */
+    .stadium-stats { display:flex; flex-direction:column; gap:10px; }
+    .st-row        { display:flex; justify-content:space-between; align-items:center; font-size:13px; }
+    .st-label      { color:var(--text-muted); }
+    .st-value      { font-weight:600; }
+
+    /* Progress bar */
+    .fin-progress-bg   { background:rgba(255,255,255,0.08); border-radius:99px; height:8px; overflow:hidden; }
+    .fin-progress-fill { height:100%; border-radius:99px; transition:width .4s; }
+
+    /* Season summary */
+    .season-fin-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    .sfin-item  { padding:12px; background:rgba(255,255,255,0.04); border-radius:10px; }
+    .sfin-label { font-size:10px; color:var(--text-muted); text-transform:uppercase; letter-spacing:.8px; margin-bottom:6px; }
+    .sfin-value { font-family:'Orbitron',sans-serif; font-size:16px; font-weight:700; }
+
+    /* Finance Report Table */
+    .fin-report-table { width:100%; border-collapse:collapse; font-size:13px; }
+    .fin-report-table th { text-align:left; padding:10px 12px; font-size:10px; text-transform:uppercase; letter-spacing:.8px; color:var(--text-muted); border-bottom:1px solid rgba(255,255,255,0.08); }
+    .fin-report-table td { padding:10px 12px; border-bottom:1px solid rgba(255,255,255,0.04); }
+    .fin-report-table tr:last-child td { border-bottom:none; }
+    .fin-report-table tr:hover td { background:rgba(255,255,255,0.03); }
+
+    /* Badges */
+    .fin-badge            { display:inline-block; padding:3px 9px; border-radius:99px; font-size:11px; font-weight:600; }
+    .fin-badge-green      { background:rgba(16,185,129,0.15); color:var(--green); }
+    .fin-badge-red        { background:rgba(239,68,68,0.15);  color:var(--red);   }
+
+    /* Transaction list */
+    .fin-tx-list  { display:flex; flex-direction:column; gap:2px; }
+    .fin-tx-row   { display:flex; align-items:center; gap:14px; padding:12px 8px; border-radius:10px; transition:background .15s; }
+    .fin-tx-row:hover { background:rgba(255,255,255,0.04); }
+    .fin-tx-icon  { font-size:20px; width:28px; text-align:center; flex-shrink:0; }
+    .fin-tx-info  { flex:1; }
+    .fin-tx-label { font-size:13px; font-weight:600; }
+    .fin-tx-note  { font-size:11px; color:var(--text-muted); margin-top:2px; }
+    .fin-tx-amount{ font-family:'Orbitron',sans-serif; font-size:14px; font-weight:700; white-space:nowrap; }
+
+    /* Empty state */
+    .fin-empty { text-align:center; color:var(--text-muted); padding:32px; font-size:14px; }
+
+    /* Responsive */
+    @media (max-width: 1200px) {
+      .finance-kpi-row { grid-template-columns: 1fr 1fr; }
+      .finance-mid-row { grid-template-columns: 1fr 1fr; }
+      .finance-mid-row .finance-season-summary { grid-column: 1 / -1; }
+    }
+    @media (max-width: 768px) {
+      .finance-kpi-row { grid-template-columns: 1fr; }
+      .finance-mid-row { grid-template-columns: 1fr; }
+      .proj-grid { flex-direction:column; }
+      .proj-divider { width:100%; height:1px; margin:8px 0; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- TOAST NOTIFICATIONS -->
+  <div id="toast-container" class="toast-container"></div>
+
+  <!-- ═══════════════════════════════════════════
+       SPLASH SCREEN
+  ═══════════════════════════════════════════ -->
+  <div id="screen-splash" class="screen active">
+    <div class="splash-logo">
+      <span class="logo-icon">⚽</span>
+      <h1>CHAMPIONMASTER</h1>
+      <div class="tagline">Efsanevi Menajerlik Deneyimi</div>
+      <div class="splash-progress">
+        <div class="progress-bar-bg">
+          <div id="splash-progress-fill" class="progress-bar-fill"></div>
+        </div>
+        <div id="splash-text" class="progress-text">Yükleniyor...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       MAIN MENU
+  ═══════════════════════════════════════════ -->
+  <div id="screen-menu" class="screen">
+    <div class="menu-bg"></div>
+    <div class="menu-container screen-content">
+      <div class="menu-left">
+        <div class="menu-logo">
+          <h1>CHAMPION<br>MASTER</h1>
+          <div class="season-badge">SEZON 2025/26</div>
+        </div>
+        <p class="menu-tagline">Takımını kur, taktiğini belirle, yıldızları transfer et ve dünyanın en iyi menajeri ol.</p>
+        <div class="menu-buttons">
+          <button class="btn btn-primary btn-lg" id="btn-continue" onclick="continueGame()">Kariyerine Devam Et</button>
+          <button class="btn btn-gold btn-lg" onclick="startNewGame()">⚽ Yeni Kariyere Başla</button>
+        </div>
+        <div class="menu-stats-row">
+          <div class="menu-stat"><div class="value">450+</div><div class="label">Oyuncu</div></div>
+          <div class="menu-stat"><div class="value">10+</div><div class="label">Kulüp</div></div>
+          <div class="menu-stat"><div class="value">3</div><div class="label">Lig</div></div>
+        </div>
+      </div>
+      <div class="menu-right">
+        <div class="menu-news-title">Son Haberler & Güncellemeler</div>
+        <div class="news-card">
+          <div class="news-tag">GÜNCELLEME V1.0</div>
+          <div class="news-headline">Süper Lig, Premier League ve La Liga eklendi! Gerçekçi kart tasarımları ve canlı maç motoru devrede.</div>
+          <div class="news-time">Bugün</div>
+        </div>
+        <div class="news-card">
+          <div class="news-tag">İPUCU</div>
+          <div class="news-headline">Akademi oyuncularını A takıma almadan önce gelişimlerini takip et.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       MANAGER SETUP SCREEN (Menajer profili oluşturma)
+  ═══════════════════════════════════════════ -->
+  <div id="screen-manager-setup" class="screen">
+    <div class="setup-wrapper">
+      <div class="setup-card">
+        <div class="setup-header">
+          <span class="setup-step">Adım 1 / 2</span>
+          <h2>Menajer Profilin</h2>
+          <p>Kariyerine başlamadan önce kendini tanıt</p>
+        </div>
+        <div class="form-group">
+          <label class="form-label">👤 Adın</label>
+          <input type="text" id="input-manager-name" class="form-input" placeholder="Menajer adını gir..." maxlength="20" value="">
+        </div>
+        <div class="form-group">
+          <label class="form-label">🌍 Uyruk</label>
+          <select id="input-manager-nat" class="form-input select-input">
+            <option value="Türk">🇹🇷 Türk</option>
+            <option value="İngiliz">🏴󠁧󠁢󠁥󠁮󠁧󠁿 İngiliz</option>
+            <option value="İspanyol">🇪🇸 İspanyol</option>
+            <option value="Alman">🇩🇪 Alman</option>
+            <option value="İtalyan">🇮🇹 İtalyan</option>
+            <option value="Portekizli">🇵🇹 Portekizli</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">🎯 Oyun Zorluğu</label>
+          <div class="difficulty-row">
+            <div class="difficulty-btn active" data-diff="easy" onclick="UI.selectDifficulty(this, 'easy')">
+              <div class="diff-icon">😊</div>
+              <div class="diff-name">Kolay</div>
+              <div class="diff-desc">Bol bütçe, kolay transferler</div>
+            </div>
+            <div class="difficulty-btn" data-diff="normal" onclick="UI.selectDifficulty(this, 'normal')">
+              <div class="diff-icon">⚽</div>
+              <div class="diff-name">Normal</div>
+              <div class="diff-desc">Dengeli deneyim</div>
+            </div>
+            <div class="difficulty-btn" data-diff="hard" onclick="UI.selectDifficulty(this, 'hard')">
+              <div class="diff-icon">🔥</div>
+              <div class="diff-name">Zor</div>
+              <div class="diff-desc">Gerçekçi kısıtlar</div>
+            </div>
+          </div>
+        </div>
+        <div class="setup-footer">
+          <button class="btn btn-ghost" onclick="UI.showScreen('menu')">← Geri</button>
+          <button class="btn btn-primary btn-lg" onclick="goToClubSelect()">Kulüp Seç →</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       CLUB SELECTION
+  ═══════════════════════════════════════════ -->
+  <div id="screen-club-select" class="screen">
+    <div class="club-select-header">
+      <div>
+        <div class="setup-step">Adım 2 / 2</div>
+        <h2>Kulübünü Seç</h2>
+      </div>
+      <button class="btn btn-primary btn-lg" id="btn-confirm-club" disabled onclick="confirmClubSelection()">
+        Bu Kulüple Başla ➔
+      </button>
+    </div>
+    <div class="club-select-layout">
+      <div style="flex: 1; display: flex; flex-direction: column; overflow: hidden;">
+        <div class="league-tabs" id="league-tabs"></div>
+        <div class="clubs-grid" id="clubs-grid" style="overflow-y: auto;"></div>
+      </div>
+      <div class="club-preview-panel" id="club-preview">
+        <div class="club-preview-empty">
+          <span style="font-size:48px">🏟️</span>
+          <p>Bir kulüp seçin</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       MAIN GAME UI
+  ═══════════════════════════════════════════ -->
+  <div id="screen-game" class="screen">
+    <div class="sidebar">
+      <div class="sidebar-logo">
+        <span>⚽</span>
+        <span class="logo-text">CHAMPMASTER</span>
+      </div>
+      <div class="sidebar-club">
+        <div class="club-badge-sm" id="sidebar-club-badge"></div>
+        <div class="club-name-text" id="sidebar-club-name"></div>
+        <div class="season-info" id="sidebar-season"></div>
+      </div>
+      <div class="sidebar-nav">
+        <div class="nav-section-title">Kulüp</div>
+        <div class="nav-item active" data-page="dashboard" onclick="UI.showPage('dashboard')"><span class="nav-icon">🏠</span><span>Dashboard</span></div>
+        <div class="nav-item" data-page="squad" onclick="UI.showPage('squad')"><span class="nav-icon">👥</span><span>Kadro</span></div>
+        <div class="nav-item" data-page="tactics" onclick="UI.showPage('tactics')"><span class="nav-icon">📋</span><span>Taktik</span></div>
+
+        <div class="nav-section-title">Yönetim</div>
+        <div class="nav-item" data-page="inbox" onclick="UI.showPage('inbox')">
+          <span class="nav-icon">📩</span><span>Gelen Kutusu</span>
+          <span class="nav-badge" id="inbox-badge" style="display:none">0</span>
+        </div>
+        <div class="nav-item" data-page="calendar" onclick="UI.showPage('calendar')"><span class="nav-icon">📅</span><span>Takvim</span></div>
+        <div class="nav-item" data-page="transfers" onclick="UI.showPage('transfers')"><span class="nav-icon">🤝</span><span>Transferler</span></div>
+        <div class="nav-item" data-page="finance" onclick="UI.showPage('finance')"><span class="nav-icon">💰</span><span>Finans</span></div>
+        <div class="nav-item" data-page="academy" onclick="UI.showPage('academy')"><span class="nav-icon">🌱</span><span>Akademi</span></div>
+
+        <div class="nav-section-title">Lig</div>
+        <div class="nav-item" data-page="stats" onclick="UI.showPage('stats')"><span class="nav-icon">📊</span><span>İstatistikler</span></div>
+      </div>
+      <div class="sidebar-bottom">
+        <div class="morale-bar">
+          <div class="label"><span>Takım Morali</span></div>
+          <div class="bar-bg"><div class="bar-fill" id="sidebar-morale-fill"></div></div>
+        </div>
+        <div class="finance-quick">
+          <div class="item"><div class="value" id="sidebar-balance"></div><div class="label">Bütçe</div></div>
+          <div class="item"><div class="value" id="sidebar-wages" style="color:var(--text-secondary)"></div><div class="label">Maaş</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="main-content">
+      <div class="topbar">
+        <div class="topbar-title" id="topbar-title">Dashboard</div>
+        <div style="display:flex;gap:12px;align-items:center">
+          <div class="topbar-date" id="topbar-date"></div>
+          <button class="btn btn-primary btn-sm" onclick="TimeEngine.advanceDay(); UI.updateSidebar(); UI.renderPage(UI.currentPage);">1 Gün İleri Sar ➔</button>
+        </div>
+      </div>
+
+      <!-- PAGE: INBOX -->
+      <div id="page-inbox" class="page-content page">
+        <div class="page-header">
+          <h2 class="page-title">Gelen Kutusu</h2>
+          <div class="page-subtitle">Medya, yönetim ve personelden gelen mesajlar</div>
+        </div>
+        <div style="display:grid; grid-template-columns:300px 1fr; gap:24px; min-height:600px">
+          <div style="background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius-lg); overflow-y:auto; max-height:800px" id="inbox-list">
+            <!-- Mesaj Listesi -->
+          </div>
+          <div style="background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius-lg); padding:32px" id="inbox-detail">
+            <div style="color:var(--text-muted); text-align:center; padding-top:100px">Görüntülemek için bir mesaj seçin.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PAGE: DASHBOARD -->
+      <div id="page-dashboard" class="page-content page active">
+        <h2 class="page-title">Hoş Geldin, Menajer!</h2>
+        <div class="page-subtitle">Kulübünün son durumu ve yaklaşan maçlar</div>
+        <div class="dashboard-grid">
+          <div class="dash-card span-2">
+            <div class="dash-card-header">
+              <span class="dash-card-title">Sıradaki Maç</span>
+              <span class="badge badge-gold" id="dash-competition">LİG MAÇI</span>
+            </div>
+            <div class="next-match">
+              <div class="match-team">
+                <div class="team-badge" id="dash-home-badge"></div>
+                <div class="team-name" id="dash-home-name"></div>
+              </div>
+              <div class="match-center">
+                <div class="match-vs">VS</div>
+                <div class="match-info" id="dash-venue"></div>
+                <button class="btn btn-primary" style="margin-top:16px" onclick="UI.showPage('calendar')">Maça Git</button>
+              </div>
+              <div class="match-team">
+                <div class="team-badge" id="dash-away-badge"></div>
+                <div class="team-name" id="dash-away-name"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="dash-card">
+            <div class="dash-card-header"><span class="dash-card-title">Sezon Özeti</span></div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+              <div class="stat-box" style="padding:12px"><div class="value" id="dash-played">0</div><div class="label">Oynanan</div></div>
+              <div class="stat-box" style="padding:12px"><div class="value" style="color:var(--gold)" id="dash-points">0</div><div class="label">Puan</div></div>
+              <div class="stat-box" style="padding:12px"><div class="value" style="color:var(--green)" id="dash-goals-for">0</div><div class="label">Atılan</div></div>
+              <div class="stat-box" style="padding:12px"><div class="value" style="color:var(--red)" id="dash-goals-against">0</div><div class="label">Yenilen</div></div>
+            </div>
+          </div>
+
+          <div class="dash-card span-2">
+            <div class="dash-card-header">
+              <span class="dash-card-title">Lig Durumu</span>
+              <button class="btn btn-ghost btn-sm" onclick="UI.showPage('stats')">Tümünü Gör</button>
+            </div>
+            <table class="league-table">
+              <thead><tr><th>Sıra</th><th>Takım</th><th>O</th><th>G</th><th>B</th><th>M</th><th>Av</th><th>P</th></tr></thead>
+              <tbody id="mini-table-body"></tbody>
+            </table>
+          </div>
+
+          <div class="dash-card">
+            <div class="dash-card-header"><span class="dash-card-title">Finans Özeti</span></div>
+            <div style="margin-bottom:20px">
+              <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Kulüp Bütçesi</div>
+              <div style="font-family:'Orbitron',sans-serif;font-size:28px;font-weight:700;color:var(--green)" id="dash-budget"></div>
+            </div>
+            <div>
+              <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Transfer Bütçesi</div>
+              <div style="font-family:'Orbitron',sans-serif;font-size:24px;font-weight:700;color:var(--accent)" id="dash-transfer-budget"></div>
+            </div>
+            <button class="btn btn-secondary btn-full" style="margin-top:24px" onclick="UI.showPage('finance')">Finans Detayları</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- PAGE: SQUAD -->
+      <div id="page-squad" class="page-content page hidden">
+        <h2 class="page-title">Kadro Yönetimi</h2>
+        <div class="squad-filters">
+          <button class="filter-btn active" onclick="UI.filterSquad(this,'all')">Tümü</button>
+          <button class="filter-btn" onclick="UI.filterSquad(this,'GK')">Kaleci</button>
+          <button class="filter-btn" onclick="UI.filterSquad(this,'DEF')">Defans</button>
+          <button class="filter-btn" onclick="UI.filterSquad(this,'MID')">Orta Saha</button>
+          <button class="filter-btn" onclick="UI.filterSquad(this,'ATT')">Forvet</button>
+        </div>
+        <div class="players-grid" id="players-grid"></div>
+      </div>
+
+      <!-- PAGE: TRANSFERS -->
+      <div id="page-transfers" class="page-content page hidden">
+        <h2 class="page-title">Transfer Merkezi</h2>
+        <div class="transfer-filters">
+          <input type="text" id="tr-search" class="search-input" placeholder="Oyuncu ara...">
+          <select id="tr-pos" class="select-input">
+            <option value="all">Tüm Mevkiler</option><option value="GK">Kaleci</option><option value="DEF">Defans</option><option value="MID">Orta Saha</option><option value="ATT">Forvet</option>
+          </select>
+          <select id="tr-league" class="select-input">
+            <option value="all">Tüm Ligler</option>
+            <option value="superlig">Süper Lig</option>
+            <option value="premier">Premier League</option>
+            <option value="laliga">La Liga</option>
+          </select>
+          <select id="tr-sort" class="select-input">
+            <option value="overall">En İyi Rating</option><option value="value">En Değerli</option><option value="age">En Genç</option><option value="potential">En Yüksek Potansiyel</option>
+          </select>
+          <button class="btn btn-primary" onclick="UI.applyTransferFilters()">Ara</button>
+        </div>
+        <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);overflow-x:auto">
+          <table class="transfer-table">
+            <thead><tr><th>Oyuncu</th><th>Kulüp</th><th>Yaş</th><th>Mevki</th><th>Genel</th><th>Pot</th><th>Değer</th><th>Maaş</th><th>Kontrat</th></tr></thead>
+            <tbody id="transfer-table-body"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- PAGE: TACTICS -->
+      <div id="page-tactics" class="page-content page hidden">
+        <h2 class="page-title">Taktik ve Formasyon</h2>
+        <div class="tactics-layout mt-24">
+          <div class="pitch-container">
+            <div style="margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;">
+              <div style="display:flex; gap:12px">
+                <select class="select-input" id="formation-select" onchange="CM.state.formation = this.value; CM.save(); UI.renderTactics()">
+                  <option value="4-3-3">4-3-3 (Ofansif)</option>
+                  <option value="4-4-2">4-4-2 (Klasik)</option>
+                  <option value="4-2-3-1">4-2-3-1 (Dengeli)</option>
+                  <option value="3-5-2">3-5-2 (Kanat Atak)</option>
+                  <option value="3-4-3">3-4-3 (Ultra Ofansif)</option>
+                </select>
+                <button class="btn btn-ghost btn-sm" onclick="UI.resetTactics()" title="Dizilişi Sıfırla">↺</button>
+              </div>
+              <div style="display:flex; gap:8px">
+                <button class="btn btn-secondary btn-sm" onclick="CM.state.lineup = CM.autoSelectLineup(CM.getMyPlayers(), CM.state.formation); CM.save(); UI.renderTactics()">Otomatik Seç</button>
+                <button class="btn btn-primary btn-sm" onclick="UI.saveTactics()">💾 Kaydet</button>
+              </div>
+            </div>
+            <div class="pitch">
+              <div class="pitch-lines">
+                <svg viewBox="0 0 100 150">
+                  <rect x="0" y="0" width="100" height="150" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="0.5"/>
+                  <rect x="20" y="0" width="60" height="25" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="0.5"/>
+                  <rect x="35" y="0" width="30" height="8" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="0.5"/>
+                  <path d="M 35 25 A 15 15 0 0 0 65 25" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="0.5"/>
+                  <rect x="20" y="125" width="60" height="25" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="0.5"/>
+                  <rect x="35" y="142" width="30" height="8" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="0.5"/>
+                  <path d="M 65 125 A 15 15 0 0 0 35 125" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="0.5"/>
+                  <line x1="0" y1="75" x2="100" y2="75" stroke="rgba(255,255,255,0.3)" stroke-width="0.5"/>
+                  <circle cx="50" cy="75" r="15" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="0.5"/>
+                </svg>
+              </div>
+              <div id="pitch-players"></div>
+            </div>
+          </div>
+          <div>
+            <div class="dash-card">
+              <h3 style="font-size:12px;color:var(--text-muted);text-transform:uppercase;margin-bottom:16px">Yedekler</h3>
+              <div id="bench-list" style="display:flex;flex-direction:column;gap:8px"></div>
+            </div>
+            <div class="dash-card mt-16">
+              <h3 style="font-size:12px;color:var(--text-muted);text-transform:uppercase;margin-bottom:16px">Oyun Anlayışı</h3>
+              <select class="select-input" style="width:100%;margin-bottom:12px" onchange="CM.state.tactics.style = this.value; CM.save()">
+                <option value="balanced">Dengeli</option><option value="attacking">Hücum</option><option value="defensive">Savunma</option>
+              </select>
+              <select class="select-input" style="width:100%" onchange="CM.state.tactics.press = this.value; CM.save()">
+                <option value="medium">Orta Baskı</option><option value="high">Önde Baskı</option><option value="low">Geride Karşıla</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PAGE: CALENDAR -->
+      <div id="page-calendar" class="page-content page hidden">
+        <h2 class="page-title">Maç Takvimi</h2>
+        <div style="display:flex;gap:12px;margin-bottom:24px">
+          <button class="btn btn-primary" onclick="CM.advanceWeek(); UI.updateSidebar(); UI.renderPage(UI.currentPage);">Otomatik Oyna (Hızlı Geç)</button>
+        </div>
+        <div id="calendar-list" style="display:flex;flex-direction:column;gap:12px"></div>
+      </div>
+
+      <!-- PAGE: FINANCE — rendered by FinanceSystem.renderFinancePage() -->
+      <div id="page-finance" class="page-content page hidden">
+        <!-- FinanceSystem bu konteyneri doldurur -->
+      </div>
+
+      <!-- PAGE: ACADEMY -->
+      <div id="page-academy" class="page-content page hidden">
+        <h2 class="page-title">Gençlik Akademisi</h2>
+        <div class="page-subtitle">Geleceğin yıldızlarını yetiştir</div>
+        <div class="academy-grid" id="academy-grid"></div>
+      </div>
+
+      <!-- PAGE: STATS -->
+      <div id="page-stats" class="page-content page hidden">
+        <h2 class="page-title">İstatistikler</h2>
+        <div id="stats-content"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       MATCH SIMULATION SCREEN
+  ═══════════════════════════════════════════ -->
+  <div id="screen-match" class="screen">
+    <div class="match-sim-layout">
+      <div class="match-sim-main">
+        <div class="match-scoreboard">
+          <div class="scoreboard-teams">
+            <div class="sb-team">
+              <div class="badge" id="sb-home-badge"></div>
+              <div class="name" id="sb-home-name"></div>
+            </div>
+            <div class="sb-score" id="sb-score"><span>0</span><span class="score-sep">-</span><span>0</span></div>
+            <div class="sb-team">
+              <div class="badge" id="sb-away-badge"></div>
+              <div class="name" id="sb-away-name"></div>
+            </div>
+          </div>
+          <div class="match-time-bar">
+            <div class="match-minute" id="match-minute-display">0'</div>
+            <div class="time-progress"><div class="time-progress-fill" id="match-progress-fill"></div></div>
+          </div>
+          <div class="match-controls">
+            <button class="btn btn-secondary btn-sm" id="btn-pause-match" onclick="UI.toggleMatchPause()">⏸ Duraklat</button>
+            <button class="btn btn-ghost btn-sm" onclick="UI.skipMatch()">⏩ Hızlı Bitir</button>
+          </div>
+        </div>
+        <h3 style="font-size:12px;color:var(--text-muted);text-transform:uppercase;margin-bottom:12px;letter-spacing:1px">Canlı Anlatım</h3>
+        <div class="match-events" id="match-events-list"></div>
+      </div>
+      <div class="match-sim-sidebar">
+        <div class="match-stats-panel">
+          <h3>Maç İstatistikleri</h3>
+          <div class="match-stat-row">
+            <span class="home-val" id="mstat-poss-home">50%</span><span class="stat-name">Topla Oynama</span><span class="away-val" id="mstat-poss-away">50%</span>
+          </div>
+          <div class="match-stat-row">
+            <span class="home-val" id="mstat-shots-home">0</span><span class="stat-name">Şut</span><span class="away-val" id="mstat-shots-away">0</span>
+          </div>
+          <div class="match-stat-row">
+            <span class="home-val" id="mstat-sot-home">0</span><span class="stat-name">İsabetli Şut</span><span class="away-val" id="mstat-sot-away">0</span>
+          </div>
+          <div class="match-stat-row">
+            <span class="home-val" id="mstat-corners-home">0</span><span class="stat-name">Korner</span><span class="away-val" id="mstat-corners-away">0</span>
+          </div>
+          <div class="match-stat-row">
+            <span class="home-val" id="mstat-yellow-home">0</span><span class="stat-name">Sarı Kart</span><span class="away-val" id="mstat-yellow-away">0</span>
+          </div>
+          <div class="match-stat-row">
+            <span class="home-val" id="mstat-fouls-home">0</span><span class="stat-name">Faul</span><span class="away-val" id="mstat-fouls-away">0</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       MATCH RESULT SCREEN (popup yok, tam ekran)
+  ═══════════════════════════════════════════ -->
+  <div id="screen-match-result" class="screen">
+    <div class="result-wrapper">
+      <div class="result-card">
+        <div class="result-header" id="result-header">
+          <!-- Doldurulacak: Kazandı / Kaybetti / Beraberlik -->
+        </div>
+        <div class="result-score-block">
+          <div class="result-team">
+            <div class="result-badge" id="result-home-badge"></div>
+            <div class="result-team-name" id="result-home-name"></div>
+          </div>
+          <div class="result-score-center">
+            <div class="result-score" id="result-score"></div>
+            <div class="result-competition" id="result-competition"></div>
+          </div>
+          <div class="result-team">
+            <div class="result-badge" id="result-away-badge"></div>
+            <div class="result-team-name" id="result-away-name"></div>
+          </div>
+        </div>
+
+        <div class="result-stats-grid" id="result-stats-grid">
+          <!-- Doldurulacak -->
+        </div>
+
+        <div class="result-events-title">Maç Özeti</div>
+        <div class="result-events" id="result-events-list"></div>
+
+        <div class="result-actions">
+          <button class="btn btn-secondary btn-lg" onclick="UI.showScreen('match'); UI.showMatchReplay()">📹 Tekrar İzle</button>
+          <button class="btn btn-primary btn-lg" onclick="UI.afterMatchContinue()">Devam Et →</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       PLAYER DETAIL MODAL
+  ═══════════════════════════════════════════ -->
+  <div id="player-modal-overlay" class="modal-overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 style="font-family:'Rajdhani',sans-serif;font-size:24px;font-weight:700">Oyuncu Profili</h3>
+        <button class="btn btn-icon btn-ghost" onclick="UI.closeModal()">✕</button>
+      </div>
+      <div class="modal-body" id="player-modal-body"></div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       TRANSFER OFFER MODAL (popup yok)
+  ═══════════════════════════════════════════ -->
+  <div id="transfer-modal-overlay" class="modal-overlay">
+    <div class="modal modal-sm">
+      <div class="modal-header">
+        <h3 id="transfer-modal-title" style="font-family:'Rajdhani',sans-serif;font-size:22px;font-weight:700">Transfer Teklifi</h3>
+        <button class="btn btn-icon btn-ghost" onclick="UI.closeTransferModal()">✕</button>
+      </div>
+      <div class="modal-body" id="transfer-modal-body"></div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="js/data.js"></script>
+  <script src="js/systems/time.js"></script>
+  <script src="js/systems/scout.js"></script>
+  <script src="js/systems/tactics.js"></script>
+  <script src="js/match.js"></script>
+  <script src="js/systems/ai.js"></script>
+  <script src="js/game.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/systems/finance.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
