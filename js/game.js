@@ -292,6 +292,11 @@ const CM = {
     if (typeof ScoutSystem !== 'undefined') {
       ScoutSystem.tick();
     }
+    
+    // CPU Manager AI tick (Transfer & Development)
+    if (typeof CpuSystem !== 'undefined') {
+      CpuSystem.tick();
+    }
 
     state.week++;
 
@@ -432,6 +437,26 @@ const CM = {
   },
 
   // ---- Transfer system ----
+  renewContract(playerId, newWageInThousands, years) {
+    const player = this.getPlayer(playerId);
+    if (!player || player.clubId !== this.state.myClubId) return { success: false, reason: "Oyuncu takımınızda değil." };
+
+    let expectedWage = Math.floor(player.wage * (1 + Math.max(0, player.overall - 70) * 0.015));
+    if (expectedWage < player.wage) expectedWage = player.wage + 2;
+
+    if (newWageInThousands < expectedWage * 0.9) {
+      return { success: false, reason: `Menajeri teklifi reddetti. Oyuncu en az ${this.formatMoney(Math.ceil(expectedWage * 0.9) * 1000)} istiyor.` };
+    }
+
+    player.wage = newWageInThousands;
+    const currentYear = 2025 + this.state.season - 1;
+    player.contractEnd = Math.max(player.contractEnd, currentYear) + years;
+    
+    this.addNotification('success', '✍️ Sözleşme Yenilendi', `${player.firstName} ${player.lastName} ile ${years} yıllık yeni sözleşme imzalandı.`);
+    this.save();
+    return { success: true };
+  },
+
   buyPlayer(playerId, offerAmount) {
     const player = ChampionMasterData.players.find(p => p.id === playerId);
     if (!player) return { success: false, reason: 'Oyuncu bulunamadı.' };
@@ -564,9 +589,15 @@ const CM = {
     CM.developAcademy();
 
     // Renew player contracts
+    const currentYear = 2025 + state.season - 1;
     ChampionMasterData.players.forEach(p => {
-      if (p.contractEnd <= 2025 + state.season - 1) {
-        p.contractEnd = 2025 + state.season + Math.floor(Math.random() * 3);
+      if (p.contractEnd <= currentYear) {
+        if (p.clubId === state.myClubId) {
+          p.clubId = 'free';
+          CM.addNotification('warning', 'Sözleşme Bitti', `${p.firstName} ${p.lastName} takımdan ayrılıp serbest statüye geçti.`);
+        } else if (p.clubId !== 'free') {
+          p.contractEnd = currentYear + 1 + Math.floor(Math.random() * 3);
+        }
       }
       // Age players
       p.age++;

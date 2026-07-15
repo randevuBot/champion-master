@@ -742,8 +742,9 @@ const UI = {
       <div class="divider"></div>
       <div style="display:flex;gap:12px;flex-wrap:wrap;">
         ${isMyPlayer ? `
+          <button class="btn btn-primary btn-sm" onclick="UI.renewContractDialog('${player.id}')">✍️ Kontrat Yenile</button>
           <button class="btn btn-danger btn-sm" onclick="UI.sellPlayerDialog('${player.id}')">💰 Sat</button>
-          <button class="btn btn-secondary btn-sm" onclick="UI.loanOutDialog('${player.id}')">📤 Kirala (Çıkış)</button>
+          <button class="btn btn-secondary btn-sm" onclick="UI.loanOutDialog('${player.id}')">📤 Kirala</button>
         ` : `
           <button class="btn btn-gold btn-sm" onclick="UI.buyPlayerDialog('${player.id}')">🛒 Teklif Ver</button>
           <button class="btn btn-secondary btn-sm" onclick="UI.loanInDialog('${player.id}')">📥 Kiralık Al</button>
@@ -1240,6 +1241,66 @@ const UI = {
     return UI.getFormationCoordsBase(formation);
   },
   
+  async askAIAssistant() {
+    if (typeof AISystem === 'undefined') return;
+    const btn = document.getElementById('btn-ai-tactic');
+    if (!btn) return;
+    const oldText = btn.innerHTML;
+    btn.innerHTML = '<span class="ai-spinner"></span> Düşünüyor...';
+    btn.disabled = true;
+
+    try {
+      const myClub = CM.getMyClub();
+      const nextFix = CM.getNextFixture();
+      let oppClubName = 'Bilinmiyor';
+      let oppInfo = 'Veri yok';
+      
+      if (nextFix) {
+        const oppId = nextFix.homeClubId === myClub.id ? nextFix.awayClubId : nextFix.homeClubId;
+        const oppClub = CM.getClub(oppId);
+        if (oppClub) {
+          oppClubName = oppClub.name;
+          const oppSquad = CM.getPlayersByClub(oppId).sort((a,b)=>b.overall - a.overall);
+          const topPlayers = oppSquad.slice(0,2).map(p => p.lastName).join(', ');
+          oppInfo = `Yıldızları: ${topPlayers}`;
+        }
+      }
+
+      const myPlayers = CM.state.lineup.map(id => CM.getPlayer(id)).filter(Boolean);
+      const myInfo = myPlayers.slice(0,3).map(p => `${p.lastName} (${p.overall})`).join(', ');
+
+      const advice = await AISystem.generateTacticalAdvice(
+        myClub.name, 
+        myInfo, 
+        oppClubName, 
+        oppInfo, 
+        `${CM.state.formation} (${CM.state.tactics.style})`
+      );
+      
+      // Modal ile göster
+      const body = document.getElementById('player-modal-body');
+      if (body) {
+        body.innerHTML = `
+          <div style="text-align:center; margin-bottom: 20px;">
+            <div style="font-size: 48px; margin-bottom:10px;">🤖</div>
+            <h3 style="color:#a78bfa">Gemini Taktik Asistanı</h3>
+          </div>
+          <div style="background: rgba(167,139,250,0.1); border: 1px solid rgba(167,139,250,0.3); padding: 20px; border-radius: 12px; font-size: 15px; line-height: 1.6; color: rgba(255,255,255,0.9);">
+            ${advice.replace(/\n/g, '<br>')}
+          </div>
+        `;
+        const header = document.querySelector('#player-modal-overlay .modal-header h3');
+        if (header) header.textContent = 'Taktik Tavsiyesi';
+        document.getElementById('player-modal-overlay').classList.add('open');
+      }
+    } catch (e) {
+      UI.toast('error', 'Hata', 'Asistan yanıt veremedi.');
+    } finally {
+      btn.innerHTML = oldText;
+      btn.disabled = false;
+    }
+  },
+
   saveTactics() {
     CM.save();
     UI.toast('success', '✅ Taktik Kaydedildi', 'Özelleştirilmiş dizilişiniz ve ilk 11 başarıyla kaydedildi.');
@@ -1342,6 +1403,7 @@ const UI = {
     UI.matchEngine = new MatchEngine(homeClub, awayClub, homeSquad, awaySquad);
     UI.matchEngine.setSpeed(CM.state.settings.matchSpeed || 2);
     UI.matchEngine.on('playerInjured', (data) => UI.onPlayerInjured(data));
+    if (typeof Pitch2D !== 'undefined') Pitch2D.init('pitch-canvas');
     UI.matchEngine.simulate(data => UI.onMatchEvent(data), result => UI.onMatchFinish(result, fix, isHome));
   },
 
@@ -1415,6 +1477,8 @@ const UI = {
         sc.classList.add('goal-flash');
         setTimeout(() => sc.classList.remove('goal-flash'), 600);
       }
+      
+      if (typeof Pitch2D !== 'undefined') Pitch2D.processEvent(event);
     }
   },
 

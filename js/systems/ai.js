@@ -1,4 +1,4 @@
-﻿/**
+/**
  * ChampionMaster — AI System (BYOK: Bring Your Own Key)
  * =====================================================
  * Kullanıcı kendi Gemini veya OpenAI API anahtarını girer.
@@ -71,7 +71,12 @@ const AISystem = (() => {
   }
 
   function getApiKey(provider) {
-    return localStorage.getItem(provider === 'openai' ? STORAGE_KEY_OPENAI : STORAGE_KEY_GEMINI) || '';
+    let key = localStorage.getItem(provider === 'openai' ? STORAGE_KEY_OPENAI : STORAGE_KEY_GEMINI);
+    if (!key && provider === 'gemini') {
+      key = prompt("Lütfen Gemini API anahtarınızı girin (Güvenlik nedeniyle Github izin vermediği için koda gömülemez):");
+      if (key) localStorage.setItem(STORAGE_KEY_GEMINI, key);
+    }
+    return key || '';
   }
 
   function getActiveProvider() { return localStorage.getItem(STORAGE_PROVIDER) || 'gemini'; }
@@ -169,6 +174,27 @@ const AISystem = (() => {
     }
     const templates = NEWS_TEMPLATES[type] || NEWS_TEMPLATES.default;
     return _pick(templates(event));
+  }
+
+  // Taktik tavsiyesi (LLM üzerinden)
+  async function generateTacticalAdvice(myTeamName, mySquadInfo, oppTeamName, oppInfo, currentTactic) {
+    if (!hasApiKey()) return 'Yapay zeka asistanını kullanmak için sol menüden API anahtarı eklemelisin.';
+    
+    const prompt = `Sen ChampionMaster oyununda uzman bir teknik direktör asistanısın.
+Kendi takımımız: ${myTeamName}
+Rakip takım: ${oppTeamName}
+Şu anki taktiğimiz: ${currentTactic}
+En iyi oyuncularımız: ${mySquadInfo}
+Rakip analizi: ${oppInfo}
+
+Lütfen bize çok kısa (maksimum 3-4 cümle), doğrudan ve akıllıca bir taktik tavsiyesi ver. Karşındaki teknik direktöre (bana) saygılı ve destekleyici konuş. Emojiler kullan. Sadece tavsiyeyi yaz.`;
+    
+    try {
+      const text = await _callLLM(prompt);
+      return text;
+    } catch (err) {
+      return 'Asistan şu an bağlanamıyor: ' + err.message;
+    }
   }
 
   function _injectStyles() {
@@ -474,6 +500,7 @@ const AISystem = (() => {
     init,
     generateMatchCommentary,
     generateNewsHeadline,
+    generateTacticalAdvice,
     injectCommentaryToResultScreen,
     setApiKey,
     getApiKey,

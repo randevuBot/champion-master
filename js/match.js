@@ -110,6 +110,12 @@ class MatchEngine {
       this.homeMomentum = Math.max(20, Math.min(80, this.homeMomentum));
     }
 
+    // CPU Manager AI (Taktik / Değişiklik)
+    if (typeof CpuSystem !== 'undefined' && typeof CM !== 'undefined' && CM.state) {
+      if (this.home.id !== CM.state.myClubId) CpuSystem.decideMatchAction(this, true);
+      if (this.away.id !== CM.state.myClubId) CpuSystem.decideMatchAction(this, false);
+    }
+
     // Event generation (Gerçekçi bir maç için çok daha fazla atak olmalı)
     // 90 dakikada ortalama 10-12 şut isabeti (iki takım toplam) olması için ihtimalleri artırıyoruz
     if (roll < 0.12) { this._tryShot(isHomeAction, true); }        // %12 şut isabeti (kaleyi bulan)
