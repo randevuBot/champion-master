@@ -6,12 +6,20 @@ import { useGameStore } from '@/store/gameStore';
 import ChampionMasterData from '@/lib/game/data';
 import { formatMoney } from '@/lib/game/utils';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 export function Sidebar({ onClose }) {
   const pathname = usePathname();
   const { myClubId, season, week, finances, morale } = useGameStore();
   const [isCollapsed, setIsCollapsed] = useState(false);
+
+  useEffect(() => {
+    if (pathname === '/' || pathname === '/dashboard') {
+      setIsCollapsed(false);
+    } else {
+      setIsCollapsed(true);
+    }
+  }, [pathname]);
 
   const [openMenus, setOpenMenus] = useState({ kulup: true, yonetim: false, lig: false });
 

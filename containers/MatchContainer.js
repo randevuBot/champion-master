@@ -51,7 +51,7 @@ export function MatchContainer() {
     }
   }, [myClubId, router, isFinished]);
 
-  const fixture = fixtures.find(f => !f.played && f.week === week && (f.homeClubId === myClubId || f.awayClubId === myClubId));
+  const fixture = fixtures.find(f => f.week === week && (f.homeClubId === myClubId || f.awayClubId === myClubId));
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -87,7 +87,7 @@ export function MatchContainer() {
 
   if (!mounted || !myClubId) return null;
   
-  if (!fixture) {
+  if (!fixture || (fixture.played && !isFinished)) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[70vh]">
         <div className="text-[80px] mb-6 opacity-50 grayscale">📅</div>
@@ -141,12 +141,13 @@ export function MatchContainer() {
       (data) => {
         if (data.type === 'tick') {
           setMinute(data.minute);
+          setStats({ ...data.stats }); // Fix React reactivity
           return;
         }
 
         setEvents(prev => [...prev, data.event]);
-        setScore(data.score);
-        setStats(data.stats);
+        setScore({ ...data.score });
+        setStats({ ...data.stats });
         setMinute(data.minute);
         if (pitch) pitch.processEvent(data.event);
         
@@ -484,120 +485,133 @@ export function MatchContainer() {
 
       {/* Devre Arası Modalı */}
       {isHalfTime && (
-        <div className="fixed inset-0 z-50 bg-black/95 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4">
-          <div className="bg-[#0f1629] w-full max-w-4xl h-[90vh] sm:h-[85vh] flex flex-col rounded-2xl border border-[#00c8ff]/40 shadow-[0_0_50px_rgba(0,200,255,0.2)] overflow-hidden">
+        <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-4 sm:p-6">
+          <div className="bg-[#0f1629] w-full max-w-[1200px] h-full max-h-[92vh] flex flex-col rounded-3xl border border-[#00c8ff]/30 shadow-[0_0_60px_rgba(0,200,255,0.15)] relative overflow-hidden">
             
+            {/* Dekoratif Efekt */}
+            <div className="absolute top-0 inset-x-0 h-32 bg-gradient-to-b from-[#00c8ff]/10 to-transparent pointer-events-none"></div>
+
             {/* Header */}
-            <div className="bg-black/50 p-3 sm:p-5 border-b border-white/10 flex items-center justify-between flex-shrink-0">
+            <div className="p-5 sm:p-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-white/10 bg-black/20 flex-shrink-0 relative z-10">
               <div>
-                <h2 className="text-lg sm:text-2xl font-orbitron font-black text-[#00c8ff] uppercase tracking-wider leading-none">Devre Arası</h2>
-                <div className="text-xs sm:text-sm font-rajdhani font-bold text-[#e8eaf6] mt-1">
-                  {homeTeam.shortName} {score.home} - {score.away} {awayTeam.shortName}
+                <h2 className="text-2xl sm:text-4xl font-orbitron font-black text-transparent bg-clip-text bg-gradient-to-r from-white to-[#00c8ff] uppercase tracking-widest leading-none">Devre Arası</h2>
+                <div className="text-sm sm:text-xl font-rajdhani font-bold text-[#e8eaf6] mt-2 flex items-center gap-2">
+                  <span>{homeTeam.name}</span>
+                  <span className="bg-black/50 px-3 py-1 rounded-lg text-[#00c8ff] border border-white/10">{score.home} - {score.away}</span>
+                  <span>{awayTeam.name}</span>
                 </div>
               </div>
               <button 
                 onClick={resumeMatch}
-                className="bg-gradient-to-r from-[#00e676] to-[#00b25c] text-white px-4 sm:px-6 py-2 rounded-lg text-xs sm:text-sm font-orbitron font-bold uppercase shadow-[0_0_15px_rgba(0,230,118,0.4)]"
+                className="w-full sm:w-auto bg-gradient-to-r from-[#00e676] to-[#00b25c] text-white px-8 py-4 rounded-xl text-sm sm:text-base font-orbitron font-black uppercase tracking-wider shadow-[0_0_20px_rgba(0,230,118,0.3)] hover:scale-105 transition-all"
               >
-                ▶ Başla
+                ▶ İkinci Yarıya Başla
               </button>
             </div>
 
             {/* Body */}
-            <div className="flex flex-col md:flex-row flex-1 overflow-hidden p-2 sm:p-4 gap-2 sm:gap-4">
+            <div className="flex flex-col lg:flex-row flex-1 overflow-hidden p-5 sm:p-8 gap-6 sm:gap-8 relative z-10">
               
-              {/* Sahadakiler */}
-              <div className="flex-1 flex flex-col bg-black/30 rounded-xl border border-white/5 overflow-hidden">
-                <div className="p-2 sm:p-3 bg-black/40 border-b border-white/5">
-                  <h3 className="text-[#00c8ff] font-orbitron font-bold text-[10px] sm:text-xs uppercase tracking-wider">Sahadakiler (Çıkartılacak)</h3>
+              {/* Sol Kolon - Sahadakiler */}
+              <div className="flex-1 flex flex-col bg-black/30 rounded-2xl border border-white/5 overflow-hidden">
+                <div className="p-4 sm:p-5 bg-black/40 border-b border-white/5 flex items-center justify-between flex-shrink-0">
+                  <h3 className="text-[#00c8ff] font-orbitron font-bold text-sm sm:text-base uppercase tracking-wider">Sahadakiler</h3>
+                  <span className="text-[10px] sm:text-xs bg-red-500/20 text-red-400 px-3 py-1 rounded-md font-bold uppercase">Oyundan Çıkart</span>
                 </div>
-                <div className="flex-1 overflow-y-auto custom-scrollbar p-2 grid grid-cols-1 sm:grid-cols-2 gap-1 content-start">
-                  {currentLineup.map(pid => {
-                    const p = ChampionMasterData.players.find(x => x.id === pid);
-                    if (!p) return null;
-                    const isSelected = selectedSubOut === pid;
-                    return (
-                      <div 
-                        key={pid}
-                        onClick={() => setSelectedSubOut(isSelected ? null : pid)}
-                        className={`flex items-center gap-2 p-1.5 sm:p-2 rounded-lg cursor-pointer transition-all border ${isSelected ? 'bg-red-500/20 border-red-500/50 shadow-[0_0_10px_rgba(239,68,68,0.3)]' : 'bg-white/5 border-transparent hover:bg-white/10'}`}
-                      >
-                        <div className="font-orbitron font-bold text-[10px] sm:text-xs w-5 text-center text-[#8892b0]">{p.position}</div>
-                        <div className="flex-1 font-rajdhani font-bold text-xs sm:text-sm text-white truncate">{p.name}</div>
-                        <div className="text-[#00e676] font-bold text-xs">{p.overall}</div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Yedekler & Taktikler */}
-              <div className="flex-1 flex flex-col gap-2 sm:gap-4 overflow-hidden">
-                
-                {/* Yedekler */}
-                <div className="flex-1 flex flex-col bg-black/30 rounded-xl border border-white/5 overflow-hidden">
-                  <div className="p-2 sm:p-3 bg-black/40 border-b border-white/5">
-                    <h3 className="text-[#00c8ff] font-orbitron font-bold text-[10px] sm:text-xs uppercase tracking-wider">Yedek Kulübesi (Oyuna Girecek)</h3>
-                  </div>
-                  <div className="flex-1 overflow-y-auto custom-scrollbar p-2 grid grid-cols-1 sm:grid-cols-2 gap-1 content-start">
-                    {squad.filter(id => !currentLineup.includes(id)).map(pid => {
+                <div className="flex-1 overflow-y-auto custom-scrollbar p-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2 gap-3">
+                    {currentLineup.map(pid => {
                       const p = ChampionMasterData.players.find(x => x.id === pid);
                       if (!p) return null;
-                      const isSelected = selectedSubIn === pid;
+                      const isSelected = selectedSubOut === pid;
                       return (
                         <div 
                           key={pid}
-                          onClick={() => setSelectedSubIn(isSelected ? null : pid)}
-                          className={`flex items-center gap-2 p-1.5 sm:p-2 rounded-lg cursor-pointer transition-all border ${isSelected ? 'bg-[#00e676]/20 border-[#00e676]/50 shadow-[0_0_10px_rgba(0,230,118,0.3)]' : 'bg-white/5 border-transparent hover:bg-white/10'}`}
+                          onClick={() => setSelectedSubOut(isSelected ? null : pid)}
+                          className={`flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all border ${isSelected ? 'bg-red-500/20 border-red-500/50 shadow-[0_0_15px_rgba(239,68,68,0.2)]' : 'bg-white/5 border-transparent hover:bg-white/10'}`}
                         >
-                          <div className="font-orbitron font-bold text-[10px] sm:text-xs w-5 text-center text-[#8892b0]">{p.position}</div>
-                          <div className="flex-1 font-rajdhani font-bold text-xs sm:text-sm text-white truncate">{p.name}</div>
-                          <div className="text-[#00e676] font-bold text-xs">{p.overall}</div>
+                          <div className="font-orbitron font-bold text-xs sm:text-sm w-6 text-center text-[#8892b0]">{p.position}</div>
+                          <div className="flex-1 font-rajdhani font-bold text-sm sm:text-base text-white truncate">{p.name}</div>
+                          <div className="text-[#00e676] font-bold text-sm">{p.overall}</div>
                         </div>
                       );
                     })}
                   </div>
                 </div>
+              </div>
 
-                {/* Taktik ve Değişiklik Paneli */}
-                <div className="bg-black/40 rounded-xl border border-[#00c8ff]/20 p-3 sm:p-4 flex-shrink-0">
-                  <div className="flex justify-between items-center mb-3">
-                    <span className="text-xs sm:text-sm text-[#8892b0]">Hak: <strong className="text-white">{subsLeft}</strong></span>
+              {/* Sağ Kolon - Yedekler & Taktikler */}
+              <div className="flex-1 flex flex-col gap-6 sm:gap-8 overflow-hidden">
+                
+                {/* Yedekler */}
+                <div className="flex-1 flex flex-col bg-black/30 rounded-2xl border border-white/5 overflow-hidden">
+                  <div className="p-4 sm:p-5 bg-black/40 border-b border-white/5 flex items-center justify-between flex-shrink-0">
+                    <h3 className="text-[#00c8ff] font-orbitron font-bold text-sm sm:text-base uppercase tracking-wider">Yedek Kulübesi</h3>
+                    <span className="text-[10px] sm:text-xs bg-[#00e676]/20 text-[#00e676] px-3 py-1 rounded-md font-bold uppercase">Oyuna Al</span>
+                  </div>
+                  <div className="flex-1 overflow-y-auto custom-scrollbar p-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2 gap-3">
+                      {squad.filter(id => !currentLineup.includes(id)).map(pid => {
+                        const p = ChampionMasterData.players.find(x => x.id === pid);
+                        if (!p) return null;
+                        const isSelected = selectedSubIn === pid;
+                        return (
+                          <div 
+                            key={pid}
+                            onClick={() => setSelectedSubIn(isSelected ? null : pid)}
+                            className={`flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all border ${isSelected ? 'bg-[#00e676]/20 border-[#00e676]/50 shadow-[0_0_15px_rgba(0,230,118,0.2)]' : 'bg-white/5 border-transparent hover:bg-white/10'}`}
+                          >
+                            <div className="font-orbitron font-bold text-xs sm:text-sm w-6 text-center text-[#8892b0]">{p.position}</div>
+                            <div className="flex-1 font-rajdhani font-bold text-sm sm:text-base text-white truncate">{p.name}</div>
+                            <div className="text-[#00e676] font-bold text-sm">{p.overall}</div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Taktik Paneli */}
+                <div className="bg-black/40 rounded-2xl border border-[#00c8ff]/20 p-5 sm:p-6 flex-shrink-0">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-5">
+                    <div className="text-sm text-[#8892b0] flex items-center gap-3">
+                      Değişiklik Hakkı: <span className="bg-white/10 text-white px-3 py-1 rounded-lg font-bold text-lg">{subsLeft}</span>
+                    </div>
                     <button 
                       disabled={!selectedSubOut || !selectedSubIn || subsLeft <= 0}
                       onClick={handleSubstitution}
-                      className="bg-[#00c8ff] text-black px-4 py-1.5 rounded-lg text-[10px] sm:text-xs font-bold uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#0090b8] transition-colors"
+                      className="w-full sm:w-auto bg-[#00c8ff] text-black px-6 py-3 rounded-xl text-sm font-bold uppercase tracking-wider disabled:opacity-30 disabled:cursor-not-allowed hover:bg-white transition-all shadow-[0_0_15px_rgba(0,200,255,0.2)]"
                     >
-                      Değiştir
+                      Değişikliği Onayla
                     </button>
                   </div>
-                  <div className="grid grid-cols-3 gap-1 sm:gap-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <select 
                       value={currentTactics.style} 
                       onChange={e => setCurrentTactics({...currentTactics, style: e.target.value})}
-                      className="bg-[#0f1629] text-white border border-white/10 rounded p-1.5 text-[10px] sm:text-xs font-rajdhani outline-none focus:border-[#00c8ff]"
+                      className="bg-[#0f1629] text-white border border-white/10 rounded-xl p-3 text-sm font-rajdhani outline-none focus:border-[#00c8ff] transition-colors"
                     >
-                      <option value="attacking">Hücum</option>
-                      <option value="balanced">Dengeli</option>
-                      <option value="defensive">Defans</option>
+                      <option value="attacking">Taktik: Hücum</option>
+                      <option value="balanced">Taktik: Dengeli</option>
+                      <option value="defensive">Taktik: Defans</option>
                     </select>
                     <select 
                       value={currentTactics.press} 
                       onChange={e => setCurrentTactics({...currentTactics, press: e.target.value})}
-                      className="bg-[#0f1629] text-white border border-white/10 rounded p-1.5 text-[10px] sm:text-xs font-rajdhani outline-none focus:border-[#00c8ff]"
+                      className="bg-[#0f1629] text-white border border-white/10 rounded-xl p-3 text-sm font-rajdhani outline-none focus:border-[#00c8ff] transition-colors"
                     >
-                      <option value="high">Ön Baskı</option>
-                      <option value="medium">Orta Baskı</option>
-                      <option value="low">Geride Bekle</option>
+                      <option value="high">Baskı: Önde</option>
+                      <option value="medium">Baskı: Orta</option>
+                      <option value="low">Baskı: Geride</option>
                     </select>
                     <select 
                       value={currentTactics.tempo} 
                       onChange={e => setCurrentTactics({...currentTactics, tempo: e.target.value})}
-                      className="bg-[#0f1629] text-white border border-white/10 rounded p-1.5 text-[10px] sm:text-xs font-rajdhani outline-none focus:border-[#00c8ff]"
+                      className="bg-[#0f1629] text-white border border-white/10 rounded-xl p-3 text-sm font-rajdhani outline-none focus:border-[#00c8ff] transition-colors"
                     >
-                      <option value="fast">Hızlı</option>
-                      <option value="normal">Normal</option>
-                      <option value="slow">Yavaş</option>
+                      <option value="fast">Tempo: Hızlı</option>
+                      <option value="normal">Tempo: Normal</option>
+                      <option value="slow">Tempo: Yavaş</option>
                     </select>
                   </div>
                 </div>
