@@ -1,0 +1,614 @@
+"use client";
+
+import { useGameStore } from "@/store/gameStore";
+import { useEffect, useState, useRef } from "react";
+import { useRouter } from "next/navigation";
+import ChampionMasterData from "@/lib/game/data";
+import { MatchEngine } from "@/lib/game/match";
+import { Pitch2D } from "@/lib/game/pitch2d";
+import { getAudioEngine } from "@/lib/game/audio";
+import { motion, AnimatePresence } from "framer-motion";
+
+export function MatchContainer() {
+  const router = useRouter();
+  const { myClubId, week, fixtures, squad, lineup } = useGameStore();
+  const [mounted, setMounted] = useState(false);
+  const [engine, setEngine] = useState(null);
+  const [events, setEvents] = useState([]);
+  const [stats, setStats] = useState({ home: {}, away: {} });
+  const [score, setScore] = useState({ home: 0, away: 0 });
+  const [minute, setMinute] = useState(0);
+  const [isFinished, setIsFinished] = useState(false);
+  const scrollRef = useRef(null);
+  const [pitch, setPitch] = useState(null);
+
+  const [aiData, setAiData] = useState(null);
+  const [isAiLoading, setIsAiLoading] = useState(false);
+  const [aiPostMatchReport, setAiPostMatchReport] = useState(null);
+  const [isAiPostMatchLoading, setIsAiPostMatchLoading] = useState(false);
+
+  // Devre Arası ve Oyuncu Değişikliği State'leri
+  const [isHalfTime, setIsHalfTime] = useState(false);
+  const [currentLineup, setCurrentLineup] = useState([]);
+  const [subsLeft, setSubsLeft] = useState(5);
+  const [selectedSubOut, setSelectedSubOut] = useState(null);
+  const [selectedSubIn, setSelectedSubIn] = useState(null);
+  const [currentTactics, setCurrentTactics] = useState({ style: 'balanced', press: 'medium', tempo: 'normal' });
+
+  useEffect(() => {
+    setMounted(true);
+    if (!myClubId) {
+      router.push("/");
+    } else {
+      setTimeout(() => {
+        const canvas = document.getElementById('pitch-canvas');
+        if (canvas) {
+          const p = new Pitch2D('pitch-canvas');
+          p.init();
+          setPitch(p);
+        }
+      }, 100);
+    }
+  }, [myClubId, router, isFinished]);
+
+  const fixture = fixtures.find(f => !f.played && f.week === week && (f.homeClubId === myClubId || f.awayClubId === myClubId));
+
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = 0;
+    }
+  }, [events]);
+
+  useEffect(() => {
+    if (!mounted || !fixture || engine || isFinished || aiData || isAiLoading) return;
+    
+    const fetchAiPrematch = async () => {
+      setIsAiLoading(true);
+      try {
+        const hClub = ChampionMasterData.clubs.find(c => c.id === fixture.homeClubId);
+        const aClub = ChampionMasterData.clubs.find(c => c.id === fixture.awayClubId);
+        const myTactics = useGameStore.getState().tactics || { style: 'balanced', press: 'medium', tempo: 'normal' };
+        const hTactics = (fixture.homeClubId === myClubId) ? myTactics : { style: 'balanced', press: 'medium', tempo: 'normal' };
+        
+        const res = await fetch('/api/match-commentary', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ type: 'prematch', homeClub: hClub, awayClub: aClub, homeTactics: hTactics })
+        });
+        const data = await res.json();
+        setAiData(data);
+      } catch (e) {
+        console.error("AI Error:", e);
+      }
+      setIsAiLoading(false);
+    };
+    fetchAiPrematch();
+  }, [mounted, fixture, engine, isFinished, aiData, isAiLoading, myClubId]);
+
+  if (!mounted || !myClubId) return null;
+  
+  if (!fixture) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[70vh]">
+        <div className="text-[80px] mb-6 opacity-50 grayscale">📅</div>
+        <h2 className="text-3xl font-rajdhani font-bold text-white mb-2">Bu Hafta Maçınız Yok</h2>
+        <p className="text-[#8892b0] mb-8">Takımınız bu haftayı bay geçiyor veya fikstür tamamlandı.</p>
+        <button 
+          onClick={() => router.push("/")}
+          className="bg-gradient-to-r from-[#00c8ff] to-[#0090b8] text-white px-8 py-3 rounded-xl font-bold tracking-widest uppercase shadow-[0_0_20px_rgba(0,200,255,0.3)] hover:scale-105 transition-transform"
+        >
+          Ana Ekrana Dön
+        </button>
+      </div>
+    );
+  }
+
+  const isHome = fixture.homeClubId === myClubId;
+  const oppClubId = isHome ? fixture.awayClubId : fixture.homeClubId;
+  const oppClub = ChampionMasterData.clubs.find(c => c.id === oppClubId);
+  const myClub = ChampionMasterData.clubs.find(c => c.id === myClubId);
+
+  const homeTeam = isHome ? myClub : oppClub;
+  const awayTeam = isHome ? oppClub : myClub;
+
+  const startMatch = () => {
+    // Maç başlama sesi
+    const audio = getAudioEngine();
+    if (audio) audio.playStartWhistle();
+
+    const oppSquad = ChampionMasterData.players.filter(p => p.clubId === oppClubId);
+    const myClubPlayers = ChampionMasterData.players.filter(p => lineup.includes(p.id));
+    
+    // CPU için otomatik taktikler belirleyebiliriz, şimdilik dengeli olsun
+    const cpuTactics = { style: 'balanced', press: 'medium', tempo: 'normal' };
+    const myTactics = useGameStore.getState().tactics || cpuTactics;
+
+    setCurrentLineup([...lineup]);
+    setCurrentTactics({ ...myTactics });
+    setSubsLeft(5);
+
+    const homeSquad = isHome ? myClubPlayers : oppSquad;
+    const awaySquad = isHome ? oppSquad : myClubPlayers;
+    
+    const homeTactics = isHome ? myTactics : cpuTactics;
+    const awayTactics = isHome ? cpuTactics : myTactics;
+
+    const me = new MatchEngine(homeTeam, awayTeam, homeSquad, awaySquad, homeTactics, awayTactics, aiData);
+    
+    if (pitch) pitch.reset();
+
+    me.simulate(
+      (data) => {
+        if (data.type === 'tick') {
+          setMinute(data.minute);
+          return;
+        }
+
+        setEvents(prev => [...prev, data.event]);
+        setScore(data.score);
+        setStats(data.stats);
+        setMinute(data.minute);
+        if (pitch) pitch.processEvent(data.event);
+        
+        // Event Sesleri
+        if (audio) {
+          if (data.event.type === 'goal') audio.playGoalSound();
+          if (data.event.type === 'half_time' || data.event.id === 'half_time') {
+            audio.playHalfTimeWhistle();
+            setIsHalfTime(true);
+          }
+        }
+      },
+      (result) => {
+        setIsFinished(true);
+        if (audio) audio.playFullTimeWhistle();
+
+        const { processMatchResult } = useGameStore.getState();
+        processMatchResult(result, true);
+
+        // Fetch Post-Match Report
+        setIsAiPostMatchLoading(true);
+        fetch('/api/match-commentary', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            type: 'postmatch',
+            homeClub: homeTeam,
+            awayClub: awayTeam,
+            stats: result.stats,
+            score: result.score,
+            events: me.events
+          })
+        })
+        .then(r => r.json())
+        .then(data => { setAiPostMatchReport(data); setIsAiPostMatchLoading(false); })
+        .catch(() => setIsAiPostMatchLoading(false));
+      }
+    );
+    setEngine(me);
+  };
+
+  const handleSubstitution = () => {
+    if (!selectedSubOut || !selectedSubIn || subsLeft <= 0) return;
+    setCurrentLineup(prev => prev.filter(id => id !== selectedSubOut).concat(selectedSubIn));
+    setSubsLeft(prev => prev - 1);
+    const inPlayer = ChampionMasterData.players.find(p => p.id === selectedSubIn);
+    engine.substitute(isHome ? 'home' : 'away', selectedSubOut, inPlayer);
+    setSelectedSubOut(null);
+    setSelectedSubIn(null);
+  };
+
+  const resumeMatch = () => {
+    setIsHalfTime(false);
+    engine.updateTactics(isHome ? 'home' : 'away', currentTactics);
+    engine.resume();
+    const audio = getAudioEngine();
+    if (audio) audio.playStartWhistle();
+  };
+
+  // --- POST-MATCH SCREEN ---
+  if (isFinished) {
+    return (
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="max-w-4xl mx-auto pb-10"
+      >
+        <div className="bg-[#141b2d]/90 backdrop-blur-xl rounded-3xl border border-white/10 shadow-[0_20px_60px_rgba(0,0,0,0.6)] overflow-hidden">
+          <div className="p-8 text-center bg-black/40 border-b border-white/5 relative overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-b from-[#00c8ff]/10 to-transparent opacity-50"></div>
+            <h2 className="text-[10px] text-[#00c8ff] font-bold tracking-[4px] uppercase mb-2 relative z-10">Maç Sonucu</h2>
+            
+            <div className="flex items-center justify-center gap-8 md:gap-16 relative z-10 mt-6">
+              {/* Home Team */}
+              <div className="flex flex-col items-center w-32">
+                <div className="w-24 h-24 rounded-full border-2 border-white/20 shadow-[0_0_30px_rgba(0,0,0,0.5)] flex items-center justify-center text-3xl font-orbitron font-black text-white mb-4" style={{ background: `linear-gradient(135deg, ${homeTeam.colors.primary}, ${homeTeam.colors.secondary})` }}>
+                  {homeTeam.shortName.slice(0,3)}
+                </div>
+                <div className="font-rajdhani font-bold text-xl text-white text-center leading-tight">{homeTeam.name}</div>
+              </div>
+
+              {/* Score */}
+              <div className="flex flex-col items-center">
+                <div className="font-orbitron font-black text-6xl tracking-widest text-white drop-shadow-[0_0_20px_rgba(255,255,255,0.5)] bg-black/40 px-6 py-2 rounded-2xl border border-white/10">
+                  {score.home} - {score.away}
+                </div>
+                <div className="mt-4 bg-white/10 px-4 py-1 rounded-full text-[10px] font-bold tracking-widest uppercase text-[#8892b0] border border-white/5">
+                  Tamamlandı
+                </div>
+              </div>
+
+              {/* Away Team */}
+              <div className="flex flex-col items-center w-32">
+                <div className="w-24 h-24 rounded-full border-2 border-white/20 shadow-[0_0_30px_rgba(0,0,0,0.5)] flex items-center justify-center text-3xl font-orbitron font-black text-white mb-4" style={{ background: `linear-gradient(135deg, ${awayTeam.colors.primary}, ${awayTeam.colors.secondary})` }}>
+                  {awayTeam.shortName.slice(0,3)}
+                </div>
+                <div className="font-rajdhani font-bold text-xl text-white text-center leading-tight">{awayTeam.name}</div>
+              </div>
+            </div>
+
+            {/* AI Report */}
+            {isAiPostMatchLoading ? (
+              <div className="mt-8 text-center bg-black/40 p-4 rounded-xl border border-[#00c8ff]/20">
+                <div className="animate-pulse text-[#00c8ff] font-rajdhani font-bold text-lg flex items-center justify-center gap-3">
+                  <div className="w-4 h-4 rounded-full border-2 border-t-transparent border-[#00c8ff] animate-spin"></div>
+                  Maç Sonu Basın Toplantısı Hazırlanıyor... 🎙️
+                </div>
+              </div>
+            ) : aiPostMatchReport ? (
+              <div className="mt-8 bg-black/40 p-6 rounded-xl border border-[#00c8ff]/20 text-left relative overflow-hidden">
+                <div className="absolute top-0 right-0 p-4 opacity-10 text-6xl">📰</div>
+                <h3 className="font-orbitron font-black text-2xl text-[#00c8ff] mb-3 leading-tight">{aiPostMatchReport.headline}</h3>
+                <p className="text-[#e8eaf6] text-sm leading-relaxed" dangerouslySetInnerHTML={{ __html: aiPostMatchReport.report }}></p>
+              </div>
+            ) : null}
+          </div>
+
+          <div className="p-8 grid grid-cols-1 md:grid-cols-2 gap-8">
+            {/* Stats */}
+            <div>
+              <h3 className="text-[11px] font-bold text-[#8892b0] uppercase tracking-wider mb-6 text-center border-b border-white/5 pb-2">Maç İstatistikleri</h3>
+              <div className="space-y-5">
+                {[
+                  { label: "Topla Oynama", h: stats.possession?.home || 50, a: stats.possession?.away || 50, isPct: true },
+                  { label: "Şut", h: stats.shots?.home || 0, a: stats.shots?.away || 0 },
+                  { label: "İsabetli Şut", h: stats.shotsOnTarget?.home || 0, a: stats.shotsOnTarget?.away || 0 },
+                  { label: "Pas İsabeti", h: stats.passAccuracy?.home || 85, a: stats.passAccuracy?.away || 85, isPct: true }
+                ].map((stat, i) => (
+                  <div key={i}>
+                    <div className="flex justify-between text-xs font-bold mb-1">
+                      <span className="text-white">{stat.h}{stat.isPct ? '%' : ''}</span>
+                      <span className="text-[#8892b0] uppercase tracking-wider text-[10px]">{stat.label}</span>
+                      <span className="text-white">{stat.a}{stat.isPct ? '%' : ''}</span>
+                    </div>
+                    <div className="flex h-1.5 w-full bg-black rounded-full overflow-hidden">
+                      <div className="h-full bg-[#00c8ff]" style={{ width: `${(stat.h / (stat.h + stat.a || 1)) * 100}%` }}></div>
+                      <div className="h-full bg-[#ff1744]" style={{ width: `${(stat.a / (stat.h + stat.a || 1)) * 100}%` }}></div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Highlights */}
+            <div>
+              <h3 className="text-[11px] font-bold text-[#8892b0] uppercase tracking-wider mb-4 text-center border-b border-white/5 pb-2">Önemli Anlar</h3>
+              <div className="space-y-3 max-h-[250px] overflow-y-auto custom-scrollbar pr-2">
+                {events.filter(e => e.type === 'goal' || e.type === 'red_card').map((e, idx) => (
+                  <div key={idx} className="flex gap-3 items-center bg-black/20 p-3 rounded-lg border border-white/5">
+                    <div className={`font-orbitron font-bold text-sm ${e.type === 'goal' ? 'text-[#00e676]' : 'text-[#ff1744]'}`}>
+                      {e.minute}'
+                    </div>
+                    <div className="text-sm text-white flex-1" dangerouslySetInnerHTML={{ __html: e.text }}></div>
+                    <div className="ml-auto text-lg shrink-0">{e.type === 'goal' ? '⚽' : '🟥'}</div>
+                  </div>
+                ))}
+                {events.filter(e => e.type === 'goal' || e.type === 'red_card').length === 0 && (
+                  <div className="text-center py-8 text-[#4a5568] text-sm">Gole veya kırmızı karta rastlanmadı.</div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <div className="p-6 bg-black/40 border-t border-white/5 flex flex-col sm:flex-row justify-center gap-4">
+            <button 
+              className="px-8 py-3 rounded-xl bg-white/5 border border-white/10 text-white font-bold tracking-widest uppercase hover:bg-white/10 transition-colors"
+              onClick={() => { setIsFinished(false); setMinute(0); setEvents([]); setScore({home:0,away:0}); }}
+            >
+              📹 Tekrar İzle
+            </button>
+            <button 
+              className="px-8 py-3 rounded-xl bg-gradient-to-r from-[#00c8ff] to-[#0090b8] text-white font-bold tracking-widest uppercase shadow-[0_0_20px_rgba(0,200,255,0.3)] hover:scale-105 transition-transform"
+              onClick={() => router.push("/")}
+            >
+              Devam Et ➔
+            </button>
+          </div>
+        </div>
+      </motion.div>
+    );
+  }
+
+  // --- LIVE MATCH SCREEN ---
+  return (
+    <div className="pb-10 h-full flex flex-col">
+      {/* Scoreboard Header */}
+      <div className="bg-[#141b2d]/90 backdrop-blur-xl rounded-2xl border border-white/5 shadow-lg p-4 sm:p-6 mb-4 sm:mb-6">
+        <div className="flex flex-wrap items-center justify-between gap-3 sm:gap-6">
+          <div className="flex items-center gap-3 flex-1 justify-end min-w-0">
+            <div className="text-right min-w-0">
+              <div className="font-rajdhani font-bold text-base sm:text-2xl text-white truncate max-w-[100px] sm:max-w-none">{homeTeam.name}</div>
+              <div className="text-[9px] sm:text-[10px] text-[#8892b0] uppercase tracking-widest">Ev Sahibi</div>
+            </div>
+            <div className="w-10 h-10 sm:w-16 sm:h-16 rounded-full border-2 border-white/10 flex items-center justify-center text-sm sm:text-xl font-orbitron font-black text-white shadow-lg flex-shrink-0" style={{ background: `linear-gradient(135deg, ${homeTeam.colors.primary}, ${homeTeam.colors.secondary})` }}>
+              {homeTeam.shortName.slice(0,3)}
+            </div>
+          </div>
+
+          <div className="flex flex-col items-center mx-1 sm:mx-4">
+            <div className="font-orbitron font-black text-3xl sm:text-5xl tracking-widest text-white drop-shadow-[0_0_15px_rgba(0,200,255,0.5)]">
+              {score.home} - {score.away}
+            </div>
+            <div className="text-[#00c8ff] font-orbitron font-bold text-base sm:text-xl mt-1 sm:mt-2 animate-pulse">
+              {minute}'
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3 flex-1 justify-start min-w-0">
+            <div className="w-10 h-10 sm:w-16 sm:h-16 rounded-full border-2 border-white/10 flex items-center justify-center text-sm sm:text-xl font-orbitron font-black text-white shadow-lg flex-shrink-0" style={{ background: `linear-gradient(135deg, ${awayTeam.colors.primary}, ${awayTeam.colors.secondary})` }}>
+              {awayTeam.shortName.slice(0,3)}
+            </div>
+            <div className="text-left min-w-0">
+              <div className="font-rajdhani font-bold text-base sm:text-2xl text-white truncate max-w-[100px] sm:max-w-none">{awayTeam.name}</div>
+              <div className="text-[9px] sm:text-[10px] text-[#8892b0] uppercase tracking-widest">Deplasman</div>
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-6">
+          <div className="h-1.5 w-full bg-black/50 rounded-full overflow-hidden border border-white/5">
+            <div className="h-full bg-gradient-to-r from-[#00c8ff] to-[#00e676] transition-all duration-1000 ease-linear shadow-[0_0_10px_#00c8ff]" style={{ width: `${(minute / 90) * 100}%` }}></div>
+          </div>
+        </div>
+
+        <div className="mt-6 flex justify-center gap-4">
+          {!engine && (
+            <button 
+              disabled={isAiLoading}
+              className={`px-8 py-3 rounded-xl font-bold tracking-widest uppercase flex items-center gap-2 transition-transform ${isAiLoading ? 'bg-gray-600 text-gray-400 cursor-not-allowed' : 'bg-gradient-to-r from-[#00e676] to-[#00b25c] text-white shadow-[0_0_20px_rgba(0,230,118,0.3)] hover:scale-105'}`}
+              onClick={startMatch}
+            >
+              {isAiLoading ? 'Spiker Bağlantısı Kuruluyor...' : '▶️ Maça Başla'}
+            </button>
+          )}
+          {engine && (
+            <>
+              <button className="bg-white/10 hover:bg-white/20 text-white px-6 py-3 rounded-xl font-bold tracking-widest uppercase border border-white/10 transition-colors">
+                ⏸ Duraklat
+              </button>
+              <button className="bg-[#ff1744]/20 hover:bg-[#ff1744]/40 text-[#ff1744] border border-[#ff1744]/30 px-6 py-3 rounded-xl font-bold tracking-widest uppercase transition-colors">
+                ⏩ Hızlı Bitir
+              </button>
+            </>
+          )}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 flex-1 min-h-[400px] sm:min-h-[500px]">
+        {/* Left Side: Pitch & Match Engine */}
+        <div className="lg:col-span-2 flex flex-col gap-6">
+          {/* Pitch 2D */}
+          <div className="bg-[#141b2d]/80 backdrop-blur-md rounded-2xl border border-white/5 shadow-lg p-4 flex justify-center items-center relative overflow-hidden h-[300px]">
+            <div className="absolute inset-0 bg-gradient-to-b from-[#1c4d2c] to-[#12361d] opacity-50 z-0"></div>
+            <canvas id="pitch-canvas" width="600" height="300" className="w-full h-full max-w-[600px] object-contain relative z-10 opacity-90"></canvas>
+            
+            {/* If not started */}
+            {!engine && minute === 0 && (
+              <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+                <div className="text-[#8892b0] font-rajdhani font-bold text-xl tracking-widest uppercase">Maç Bekleniyor...</div>
+              </div>
+            )}
+          </div>
+
+          {/* Live Commentary Feed */}
+          <div className="bg-[#141b2d]/80 backdrop-blur-md rounded-2xl border border-white/5 shadow-lg flex-1 flex flex-col min-h-[300px]">
+            <div className="px-6 py-4 border-b border-white/5 bg-black/20">
+              <span className="font-rajdhani font-bold text-lg tracking-wider text-[#e8eaf6] uppercase flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-[#ff1744] animate-pulse"></span>
+                Canlı Anlatım
+              </span>
+            </div>
+            <div className="flex-1 overflow-y-auto custom-scrollbar p-4 space-y-3" ref={scrollRef}>
+              <AnimatePresence>
+                {[...events].reverse().map((e, idx) => (
+                  <motion.div 
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    key={events.length - idx} 
+                    className="flex gap-4 p-3 bg-black/20 rounded-xl border border-white/5 hover:border-[#00c8ff]/30 transition-colors"
+                  >
+                    <div className="font-orbitron font-bold text-[#00c8ff] w-8 shrink-0">{e.minute}'</div>
+                    <div className="text-[#e8eaf6] text-sm leading-relaxed" dangerouslySetInnerHTML={{ __html: e.text }}></div>
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+              {events.length === 0 && !engine && (
+                <div className="h-full flex items-center justify-center text-center p-4">
+                  {isAiLoading ? (
+                    <div className="text-[#00c8ff] text-sm animate-pulse flex flex-col items-center gap-2">
+                      <div className="w-6 h-6 rounded-full border-2 border-t-transparent border-[#00c8ff] animate-spin"></div>
+                      Canlı Yayın Ekibi Hazırlanıyor... 📡
+                    </div>
+                  ) : aiData ? (
+                    <div className="text-[#e8eaf6] text-sm italic bg-[#00c8ff]/10 p-4 rounded-xl border border-[#00c8ff]/20">
+                      🎙️ "{aiData.preview}"
+                    </div>
+                  ) : (
+                    <div className="text-[#4a5568] text-sm">Maç başladığında önemli anlar burada akacak.</div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Right Side: Live Stats */}
+        <div className="bg-[#141b2d]/80 backdrop-blur-md rounded-2xl border border-white/5 shadow-lg flex flex-col">
+          <div className="px-6 py-4 border-b border-white/5 bg-black/20">
+            <span className="font-rajdhani font-bold text-lg tracking-wider text-[#e8eaf6] uppercase">Anlık İstatistikler</span>
+          </div>
+          <div className="p-6 space-y-6 flex-1 overflow-y-auto custom-scrollbar">
+            {[
+              { label: "Topla Oynama", h: stats.possession?.home || 50, a: stats.possession?.away || 50, isPct: true },
+              { label: "Şut", h: stats.shots?.home || 0, a: stats.shots?.away || 0 },
+              { label: "İsabetli Şut", h: stats.shotsOnTarget?.home || 0, a: stats.shotsOnTarget?.away || 0 },
+              { label: "Korner", h: stats.corners?.home || 0, a: stats.corners?.away || 0 },
+              { label: "Sarı Kart", h: stats.yellowCards?.home || 0, a: stats.yellowCards?.away || 0 },
+              { label: "Faul", h: stats.fouls?.home || 0, a: stats.fouls?.away || 0 }
+            ].map((stat, i) => (
+              <div key={i}>
+                <div className="flex justify-between text-xs font-bold mb-2">
+                  <span className="text-white">{stat.h}{stat.isPct ? '%' : ''}</span>
+                  <span className="text-[#8892b0] uppercase tracking-wider text-[10px]">{stat.label}</span>
+                  <span className="text-white">{stat.a}{stat.isPct ? '%' : ''}</span>
+                </div>
+                <div className="flex h-2 w-full bg-black rounded-full overflow-hidden">
+                  <div className="h-full bg-gradient-to-r from-white/20 to-white" style={{ width: `${(stat.h / (stat.h + stat.a || 1)) * 100}%` }}></div>
+                  <div className="h-full bg-gradient-to-l from-white/20 to-white opacity-50" style={{ width: `${(stat.a / (stat.h + stat.a || 1)) * 100}%` }}></div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Devre Arası Modalı */}
+      {isHalfTime && (
+        <div className="fixed inset-0 z-50 bg-black/95 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4">
+          <div className="bg-[#0f1629] w-full max-w-4xl h-[90vh] sm:h-[85vh] flex flex-col rounded-2xl border border-[#00c8ff]/40 shadow-[0_0_50px_rgba(0,200,255,0.2)] overflow-hidden">
+            
+            {/* Header */}
+            <div className="bg-black/50 p-3 sm:p-5 border-b border-white/10 flex items-center justify-between flex-shrink-0">
+              <div>
+                <h2 className="text-lg sm:text-2xl font-orbitron font-black text-[#00c8ff] uppercase tracking-wider leading-none">Devre Arası</h2>
+                <div className="text-xs sm:text-sm font-rajdhani font-bold text-[#e8eaf6] mt-1">
+                  {homeTeam.shortName} {score.home} - {score.away} {awayTeam.shortName}
+                </div>
+              </div>
+              <button 
+                onClick={resumeMatch}
+                className="bg-gradient-to-r from-[#00e676] to-[#00b25c] text-white px-4 sm:px-6 py-2 rounded-lg text-xs sm:text-sm font-orbitron font-bold uppercase shadow-[0_0_15px_rgba(0,230,118,0.4)]"
+              >
+                ▶ Başla
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="flex flex-col md:flex-row flex-1 overflow-hidden p-2 sm:p-4 gap-2 sm:gap-4">
+              
+              {/* Sahadakiler */}
+              <div className="flex-1 flex flex-col bg-black/30 rounded-xl border border-white/5 overflow-hidden">
+                <div className="p-2 sm:p-3 bg-black/40 border-b border-white/5">
+                  <h3 className="text-[#00c8ff] font-orbitron font-bold text-[10px] sm:text-xs uppercase tracking-wider">Sahadakiler (Çıkartılacak)</h3>
+                </div>
+                <div className="flex-1 overflow-y-auto custom-scrollbar p-2 grid grid-cols-1 sm:grid-cols-2 gap-1 content-start">
+                  {currentLineup.map(pid => {
+                    const p = ChampionMasterData.players.find(x => x.id === pid);
+                    if (!p) return null;
+                    const isSelected = selectedSubOut === pid;
+                    return (
+                      <div 
+                        key={pid}
+                        onClick={() => setSelectedSubOut(isSelected ? null : pid)}
+                        className={`flex items-center gap-2 p-1.5 sm:p-2 rounded-lg cursor-pointer transition-all border ${isSelected ? 'bg-red-500/20 border-red-500/50 shadow-[0_0_10px_rgba(239,68,68,0.3)]' : 'bg-white/5 border-transparent hover:bg-white/10'}`}
+                      >
+                        <div className="font-orbitron font-bold text-[10px] sm:text-xs w-5 text-center text-[#8892b0]">{p.position}</div>
+                        <div className="flex-1 font-rajdhani font-bold text-xs sm:text-sm text-white truncate">{p.name}</div>
+                        <div className="text-[#00e676] font-bold text-xs">{p.overall}</div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Yedekler & Taktikler */}
+              <div className="flex-1 flex flex-col gap-2 sm:gap-4 overflow-hidden">
+                
+                {/* Yedekler */}
+                <div className="flex-1 flex flex-col bg-black/30 rounded-xl border border-white/5 overflow-hidden">
+                  <div className="p-2 sm:p-3 bg-black/40 border-b border-white/5">
+                    <h3 className="text-[#00c8ff] font-orbitron font-bold text-[10px] sm:text-xs uppercase tracking-wider">Yedek Kulübesi (Oyuna Girecek)</h3>
+                  </div>
+                  <div className="flex-1 overflow-y-auto custom-scrollbar p-2 grid grid-cols-1 sm:grid-cols-2 gap-1 content-start">
+                    {squad.filter(id => !currentLineup.includes(id)).map(pid => {
+                      const p = ChampionMasterData.players.find(x => x.id === pid);
+                      if (!p) return null;
+                      const isSelected = selectedSubIn === pid;
+                      return (
+                        <div 
+                          key={pid}
+                          onClick={() => setSelectedSubIn(isSelected ? null : pid)}
+                          className={`flex items-center gap-2 p-1.5 sm:p-2 rounded-lg cursor-pointer transition-all border ${isSelected ? 'bg-[#00e676]/20 border-[#00e676]/50 shadow-[0_0_10px_rgba(0,230,118,0.3)]' : 'bg-white/5 border-transparent hover:bg-white/10'}`}
+                        >
+                          <div className="font-orbitron font-bold text-[10px] sm:text-xs w-5 text-center text-[#8892b0]">{p.position}</div>
+                          <div className="flex-1 font-rajdhani font-bold text-xs sm:text-sm text-white truncate">{p.name}</div>
+                          <div className="text-[#00e676] font-bold text-xs">{p.overall}</div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Taktik ve Değişiklik Paneli */}
+                <div className="bg-black/40 rounded-xl border border-[#00c8ff]/20 p-3 sm:p-4 flex-shrink-0">
+                  <div className="flex justify-between items-center mb-3">
+                    <span className="text-xs sm:text-sm text-[#8892b0]">Hak: <strong className="text-white">{subsLeft}</strong></span>
+                    <button 
+                      disabled={!selectedSubOut || !selectedSubIn || subsLeft <= 0}
+                      onClick={handleSubstitution}
+                      className="bg-[#00c8ff] text-black px-4 py-1.5 rounded-lg text-[10px] sm:text-xs font-bold uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#0090b8] transition-colors"
+                    >
+                      Değiştir
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-3 gap-1 sm:gap-2">
+                    <select 
+                      value={currentTactics.style} 
+                      onChange={e => setCurrentTactics({...currentTactics, style: e.target.value})}
+                      className="bg-[#0f1629] text-white border border-white/10 rounded p-1.5 text-[10px] sm:text-xs font-rajdhani outline-none focus:border-[#00c8ff]"
+                    >
+                      <option value="attacking">Hücum</option>
+                      <option value="balanced">Dengeli</option>
+                      <option value="defensive">Defans</option>
+                    </select>
+                    <select 
+                      value={currentTactics.press} 
+                      onChange={e => setCurrentTactics({...currentTactics, press: e.target.value})}
+                      className="bg-[#0f1629] text-white border border-white/10 rounded p-1.5 text-[10px] sm:text-xs font-rajdhani outline-none focus:border-[#00c8ff]"
+                    >
+                      <option value="high">Ön Baskı</option>
+                      <option value="medium">Orta Baskı</option>
+                      <option value="low">Geride Bekle</option>
+                    </select>
+                    <select 
+                      value={currentTactics.tempo} 
+                      onChange={e => setCurrentTactics({...currentTactics, tempo: e.target.value})}
+                      className="bg-[#0f1629] text-white border border-white/10 rounded p-1.5 text-[10px] sm:text-xs font-rajdhani outline-none focus:border-[#00c8ff]"
+                    >
+                      <option value="fast">Hızlı</option>
+                      <option value="normal">Normal</option>
+                      <option value="slow">Yavaş</option>
+                    </select>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+
+          </div>
+        </div>
+      )}
+
+    </div>
+  );
+}

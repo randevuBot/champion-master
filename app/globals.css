@@ -1,0 +1,126 @@
+@import "tailwindcss";
+@plugin "tailwindcss-animate";
+@source "../containers";
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: #0a0e1a;
+  --color-foreground: #e8eaf6;
+
+  --color-card: #141b2d;
+  --color-card-foreground: #e8eaf6;
+
+  --color-popover: #1a2340;
+  --color-popover-foreground: #e8eaf6;
+
+  --color-primary: #00c8ff;
+  --color-primary-foreground: #ffffff;
+
+  --color-secondary: #0f1629;
+  --color-secondary-foreground: #8892b0;
+
+  --color-muted: #1a2340;
+  --color-muted-foreground: #4a5568;
+
+  --color-accent: #1f2a4a;
+  --color-accent-foreground: #00c8ff;
+
+  --color-destructive: #ff1744;
+  --color-destructive-foreground: #ffffff;
+
+  --color-border: rgba(255, 255, 255, 0.06);
+  --color-input: rgba(255, 255, 255, 0.06);
+  --color-ring: rgba(0, 200, 255, 0.3);
+
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 20px;
+  --radius-xl: 28px;
+
+  --color-gold: #f5c842;
+  --color-green: #00e676;
+
+  --font-inter: var(--font-inter);
+  --font-orbitron: var(--font-orbitron);
+  --font-rajdhani: var(--font-rajdhani);
+}
+
+:root {
+  --background: #0a0e1a;
+  --foreground: #e8eaf6;
+  --card: #141b2d;
+  --card-foreground: #e8eaf6;
+  --popover: #1a2340;
+  --popover-foreground: #e8eaf6;
+  --primary: #00c8ff;
+  --primary-foreground: #ffffff;
+  --secondary: #0f1629;
+  --secondary-foreground: #8892b0;
+  --muted: #1a2340;
+  --muted-foreground: #4a5568;
+  --accent: #1f2a4a;
+  --accent-foreground: #00c8ff;
+  --destructive: #ff1744;
+  --destructive-foreground: #ffffff;
+  --border: rgba(255, 255, 255, 0.06);
+  --input: rgba(255, 255, 255, 0.06);
+  --ring: rgba(0, 200, 255, 0.3);
+  --radius: 12px;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+    box-sizing: border-box;
+  }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background: var(--background);
+    color: var(--foreground);
+    min-height: 100vh;
+    overflow-x: hidden;
+    overscroll-behavior-y: none; /* Prevents mobile pull-to-refresh */
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background:
+      radial-gradient(ellipse at 20% 20%, rgba(0,100,200,0.08) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 80%, rgba(0,200,100,0.05) 0%, transparent 50%),
+      radial-gradient(ellipse at 50% 50%, rgba(0,200,255,0.03) 0%, transparent 70%);
+    pointer-events: none; z-index: 0;
+  }
+}
+
+/* ── Scrollbar ─────────────────────────────────────── */
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 200, 255, 0.2) transparent;
+}
+.custom-scrollbar::-webkit-scrollbar { width: 4px; height: 4px; }
+.custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(0, 200, 255, 0.2);
+  border-radius: 999px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 200, 255, 0.4);
+}
+
+/* ── Safe overflow helper ──────────────────────────── */
+.no-overflow { overflow: hidden; max-width: 100%; }
+
+/* ── Responsive table wrapper ──────────────────────── */
+.table-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.table-scroll::-webkit-scrollbar { height: 4px; }
+.table-scroll::-webkit-scrollbar-thumb {
+  background: rgba(0, 200, 255, 0.2);
+  border-radius: 999px;
+}

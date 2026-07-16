@@ -1,0 +1,54 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Club {
+  id             String   @id // API-Football ID as string (e.g. "645")
+  name           String
+  shortName      String
+  leagueId       String
+  city           String
+  stadium        String
+  capacity       Int
+  prestige       Int
+  budget         Int
+  primaryColor   String?
+  secondaryColor String?
+  founded        Int?
+  logo           String?
+  players        Player[]
+}
+
+model Player {
+  id          String   @id @default(cuid())
+  apiId       Int?     @unique
+  firstName   String
+  lastName    String
+  age         Int
+  nationality String
+  clubId      String
+  club        Club     @relation(fields: [clubId], references: [id])
+  position    String
+  overall     Int
+  pac         Int
+  sho         Int
+  pas         Int
+  dri         Int
+  def         Int
+  phy         Int
+  value       Float
+  wage        Float
+  contractEnd Int
+  height      Int
+  weight      Int
+  potential   Int
+  photo       String?
+}
