@@ -57,10 +57,9 @@ export function StatsContainer() {
                   const rank = index + 1;
                   
                   return (
-                    <tr key={row.clubId} className={`transition-colors hover:bg-white/5 ${isMyClub ? 'bg-[#00c8ff]/10 relative' : ''}`}>
-                      {isMyClub && <td className="absolute left-0 top-0 bottom-0 w-1 bg-[#00c8ff] shadow-[0_0_10px_#00c8ff]"></td>}
-                      
-                      <td className={`px-6 py-4 font-bold ${rank <= 4 ? 'text-[#00e676]' : rank >= 18 ? 'text-[#ff1744]' : 'text-[#8892b0]'}`}>
+                    <tr key={row.clubId} className={`transition-colors hover:bg-white/5 ${isMyClub ? 'bg-[#00c8ff]/10' : ''}`}>
+                      <td className={`px-6 py-4 font-bold relative ${rank <= 4 ? 'text-[#00e676]' : rank >= 18 ? 'text-[#ff1744]' : 'text-[#8892b0]'}`}>
+                        {isMyClub && <div className="absolute left-0 top-0 bottom-0 w-1 bg-[#00c8ff] shadow-[0_0_10px_#00c8ff]"></div>}
                         {rank}
                       </td>
                       

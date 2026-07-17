@@ -97,9 +97,40 @@ export function InboxContainer() {
                 </div>
               </div>
               
-              <div className="p-6 bg-black/20 border-t border-white/5 flex justify-end gap-3">
-                <button className="px-6 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white font-bold text-sm tracking-wide hover:bg-white/10 transition-colors">Arşivle</button>
-                <button className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-[#00c8ff] to-[#0090b8] text-white font-bold text-sm tracking-wide shadow-[0_0_15px_rgba(0,200,255,0.3)] hover:scale-105 transition-transform">Sil</button>
+              <div className="p-6 bg-black/20 border-t border-white/5 flex flex-wrap justify-end gap-3">
+                {selectedMsg.type === 'decision' ? (
+                  selectedMsg.handled ? (
+                    <div className="text-[#00c8ff] font-bold text-sm border border-[#00c8ff]/30 bg-[#00c8ff]/10 px-6 py-2.5 rounded-xl w-full text-center">
+                      Kararınız İletildi: {selectedMsg.handledActionLabel}
+                    </div>
+                  ) : (
+                    <div className="flex flex-wrap gap-3 w-full justify-end">
+                      {selectedMsg.actions?.map(action => (
+                        <button 
+                          key={action.value}
+                          onClick={() => {
+                            useGameStore.getState().handleInboxAction(selectedMsg.id, action.value);
+                            // Tetikleme sonrası UI'ı force update etmek için state'i okuyalım
+                            const updatedMsg = useGameStore.getState().news.find(m => m.id === selectedMsg.id);
+                            if (updatedMsg) setSelectedMsg(updatedMsg);
+                          }}
+                          className={`px-6 py-2.5 rounded-xl font-bold text-sm tracking-wide transition-all ${
+                            action.value === 'accept' ? 'bg-gradient-to-r from-[#00e676] to-[#00b25c] text-white hover:scale-105 shadow-[0_0_15px_rgba(0,230,118,0.3)]' :
+                            action.value === 'reject' || action.value === 'drop' ? 'bg-gradient-to-r from-[#ff1744] to-red-600 text-white hover:scale-105 shadow-[0_0_15px_rgba(255,23,68,0.3)]' :
+                            'bg-white/10 text-white hover:bg-white/20 border border-white/20'
+                          }`}
+                        >
+                          {action.label}
+                        </button>
+                      ))}
+                    </div>
+                  )
+                ) : (
+                  <>
+                    <button className="px-6 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white font-bold text-sm tracking-wide hover:bg-white/10 transition-colors">Arşivle</button>
+                    <button className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-[#00c8ff] to-[#0090b8] text-white font-bold text-sm tracking-wide shadow-[0_0_15px_rgba(0,200,255,0.3)] hover:scale-105 transition-transform">Sil</button>
+                  </>
+                )}
               </div>
             </motion.div>
           )}

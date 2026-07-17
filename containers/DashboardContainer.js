@@ -14,7 +14,7 @@ const itemVariants = {
 
 export function DashboardContainer() {
   const router = useRouter();
-  const { myClubId, week, fixtures, seasonStats, leagueTable, finances, manager, news } = useGameStore();
+  const { myClubId, week, fixtures, seasonStats, leagueTable, finances, manager, news, morale } = useGameStore();
   const [openSection, setOpenSection] = useState("club"); // Default open section
 
   if (!myClubId) return null;
@@ -59,9 +59,22 @@ export function DashboardContainer() {
         <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full flex items-center justify-center text-3xl font-orbitron font-black text-white border-4 border-[#00c8ff]/30 shadow-[0_0_30px_rgba(0,200,255,0.2)] shrink-0" style={{ background: `linear-gradient(135deg, ${club?.colors?.primary}, ${club?.colors?.secondary})` }}>
           {club?.shortName.slice(0,3)}
         </div>
-        <div>
+        <div className="flex-1">
           <h2 className="text-3xl sm:text-4xl font-rajdhani font-bold tracking-wide text-white mb-2">Hoş Geldin, <span className="text-[#00c8ff]">{manager?.name || "Menajer"}</span>!</h2>
-          <p className="text-[#8892b0] text-sm sm:text-base">Kariyerinde <span className="text-white font-bold">{week}. Hafta</span>. Takımını başarıya taşı!</p>
+          <p className="text-[#8892b0] text-sm sm:text-base mb-3">Kariyerinde <span className="text-white font-bold">{week}. Hafta</span>. Takımını başarıya taşı!</p>
+          
+          <div className="flex items-center gap-3 bg-black/40 inline-flex px-4 py-2 rounded-xl border border-white/5">
+            <span className="text-xl">{morale >= 80 ? '🔥' : morale >= 60 ? '👍' : morale >= 40 ? '😐' : '😡'}</span>
+            <div>
+              <div className="text-[10px] text-[#8892b0] uppercase tracking-widest font-bold">Takım Morali</div>
+              <div className="flex items-center gap-2">
+                <div className="w-24 h-1.5 bg-black rounded-full overflow-hidden">
+                  <div className={`h-full ${morale >= 80 ? 'bg-[#00e676]' : morale >= 60 ? 'bg-[#00c8ff]' : morale >= 40 ? 'bg-[#f5c842]' : 'bg-[#ff1744]'}`} style={{ width: `${morale || 70}%` }}></div>
+                </div>
+                <span className="text-xs font-bold text-white">{morale || 70}%</span>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
       
@@ -140,9 +153,11 @@ export function DashboardContainer() {
                             const isMyClub = row.clubId === myClubId;
                             const actualRank = leagueTable.findIndex(r => r.clubId === row.clubId) + 1;
                             return (
-                              <tr key={row.clubId} className={`transition-colors hover:bg-white/5 ${isMyClub ? 'bg-[#00c8ff]/10 relative' : ''}`}>
-                                {isMyClub && <td className="absolute left-0 top-0 bottom-0 w-1 bg-[#00c8ff] shadow-[0_0_10px_#00c8ff]"></td>}
-                                <td className={`px-6 py-4 font-bold ${actualRank <= 4 ? 'text-[#00e676]' : actualRank >= 18 ? 'text-[#ff1744]' : 'text-[#8892b0]'}`}>{actualRank}</td>
+                              <tr key={row.clubId} className={`transition-colors hover:bg-white/5 ${isMyClub ? 'bg-[#00c8ff]/10' : ''}`}>
+                                <td className={`px-6 py-4 font-bold relative ${actualRank <= 4 ? 'text-[#00e676]' : actualRank >= 18 ? 'text-[#ff1744]' : 'text-[#8892b0]'}`}>
+                                  {isMyClub && <div className="absolute left-0 top-0 bottom-0 w-1 bg-[#00c8ff] shadow-[0_0_10px_#00c8ff]"></div>}
+                                  {actualRank}
+                                </td>
                                 <td className={`px-6 py-4 font-semibold ${isMyClub ? 'text-white font-bold' : 'text-[#e8eaf6]'}`}>
                                   <div className="flex items-center gap-3">
                                     <div className="w-6 h-6 rounded-full flex items-center justify-center text-[8px] font-orbitron font-bold text-white border border-white/20" style={{ background: `linear-gradient(135deg, ${team?.colors?.primary}, ${team?.colors?.secondary})` }}>

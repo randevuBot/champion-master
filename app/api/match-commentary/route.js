@@ -23,6 +23,7 @@ export async function POST(req) {
       Sen efsanevi, heyecanlı ve tarafsız bir futbol spikerisin (Ercan Taner veya Ertem Şener tarzı, ama profesyonel).
       Bugün ${homeClub.name} (Ev Sahibi) ile ${awayClub.name} (Deplasman) arasında bir maç oynanacak.
       Ev sahibi takımın taktiği: ${homeTactics?.style === 'attacking' ? 'Hücumcu' : homeTactics?.style === 'defensive' ? 'Defansif' : 'Dengeli'} ve ${homeTactics?.tempo === 'fast' ? 'Hızlı' : 'Yavaş'} tempoda.
+      ÖNEMLİ: KESİNLİKLE VE SADECE TÜRKÇE YAZACAKSIN. İNGİLİZCE KULLANMAK YASAKTIR.
       
       Görevlerin:
       1. Maç başlamadan hemen önce okunacak 2 cümlelik çok heyecanlı bir "preview" (maç önü anonsu) yaz.
@@ -59,6 +60,8 @@ export async function POST(req) {
       Bana maç hakkında okuması çok keyifli, gazetede manşet olacak tarzda:
       1. Çarpıcı bir manşet (headline)
       2. 3-4 cümlelik destansı bir maç özeti / eleştirisi (report) yaz.
+      
+      ÖNEMLİ KURAL: YANITIN KESİNLİKLE TÜRKÇE OLMALIDIR. İNGİLİZCE KELİMELER KULLANMA.
 
       SADECE VE SADECE JSON formatında dön:
       {

@@ -1,10 +1,11 @@
 "use client";
 
-import { useGameStore } from "@/store/gameStore";
+import { useGameStore, getSlotSummaries, setActiveSlot } from "@/store/gameStore";
 import { useEffect, useState } from "react";
 import ChampionMasterData from "@/lib/game/data";
 import { formatMoney } from "@/lib/game/utils";
 import { motion, AnimatePresence } from "framer-motion";
+import { loginUser, registerUser, getActiveUser, logoutUser } from "@/lib/auth";
 
 export function HomeContainer() {
   const { myClubId, initGame, resetGame, setPlaying } = useGameStore();
@@ -17,6 +18,20 @@ export function HomeContainer() {
   const [difficulty, setDifficulty] = useState("normal");
   const [selectedClubId, setSelectedClubId] = useState(null);
   const [activeLeagueTab, setActiveLeagueTab] = useState("superlig");
+  const [slots, setSlots] = useState([]);
+  
+  // Auth state
+  const [currentUser, setCurrentUser] = useState(null);
+  const [authMode, setAuthMode] = useState("login"); // "login" or "register"
+  const [authEmail, setAuthEmail] = useState("");
+  const [authPassword, setAuthPassword] = useState("");
+  const [authLoading, setAuthLoading] = useState(false);
+  const [authError, setAuthError] = useState("");
+
+  const loadSlots = async () => {
+    const s = await getSlotSummaries();
+    setSlots(s);
+  };
 
   useEffect(() => {
     if (screen === "splash") {
@@ -30,7 +45,16 @@ export function HomeContainer() {
         if (progress >= 100) {
           progress = 100;
           clearInterval(interval);
-          setTimeout(() => setScreen("menu"), 500);
+          
+          // Check if user is logged in
+          getActiveUser().then(user => {
+            if (user) {
+              setCurrentUser(user);
+              setTimeout(() => setScreen("menu"), 500);
+            } else {
+              setTimeout(() => setScreen("auth"), 500);
+            }
+          });
         }
         setSplashProgress(progress);
       }, 150);
@@ -38,15 +62,79 @@ export function HomeContainer() {
     }
   }, [screen]);
 
-  const handleContinue = () => {
-    if (myClubId) {
+  const handleOpenSlots = () => {
+    loadSlots();
+    setScreen("slots");
+  };
+
+  const handleSelectSlot = async (slotSummary) => {
+    setActiveSlot(slotSummary.slot);
+    await useGameStore.persist.rehydrate();
+    if (slotSummary.isEmpty) {
+      resetGame();
+      setScreen("setup");
+    } else {
       setPlaying(true);
     }
   };
 
-  const handleStartNewGame = () => {
-    resetGame();
-    setScreen("setup");
+  const handleDeleteSlot = async (slotId, e) => {
+    e.stopPropagation();
+    if (confirm(`Kayıt ${slotId} silinecek. Emin misiniz?`)) {
+      setActiveSlot(slotId);
+      resetGame();
+      await useGameStore.persist.rehydrate();
+      loadSlots(); // Reload slot data
+    }
+  };
+
+  const handleAuth = async (e) => {
+    e.preventDefault();
+    setAuthLoading(true);
+    setAuthError("");
+    
+    let res;
+    if (authMode === "login") {
+      res = await loginUser(authEmail, authPassword);
+    } else {
+      res = await registerUser(authEmail, authPassword);
+    }
+
+    setAuthLoading(false);
+    if (res.success) {
+      setCurrentUser(res.user);
+      setScreen("menu");
+    } else {
+      setAuthError(res.reason);
+    }
+  };
+
+  const handleSocialAuth = async (provider) => {
+    setAuthLoading(true);
+    setAuthError("");
+    // Sahte Sosyal Giriş Beklemesi
+    setTimeout(async () => {
+      const email = `${provider.toLowerCase()}_user_${Math.floor(Math.random()*1000)}@example.com`;
+      const res = await registerUser(email, null, provider);
+      setAuthLoading(false);
+      if (res.success) {
+        setCurrentUser(res.user);
+        setScreen("menu");
+      } else {
+        // Zaten kayıtlıysa giriş yap (mock logic)
+        const loginRes = await loginUser(email, null, provider);
+        if (loginRes.success) {
+          setCurrentUser(loginRes.user);
+          setScreen("menu");
+        }
+      }
+    }, 1500);
+  };
+
+  const handleLogout = async () => {
+    await logoutUser();
+    setCurrentUser(null);
+    setScreen("auth");
   };
 
   const handleConfirmClub = () => {
@@ -97,6 +185,102 @@ export function HomeContainer() {
           </motion.div>
         )}
 
+        {/* AUTH SCREEN */}
+        {screen === "auth" && (
+          <motion.div 
+            key="auth"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 z-40 bg-[#080c14] flex items-center justify-center p-4"
+          >
+            <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1518605368461-1ee134d16851?q=80&w=2000')] bg-cover bg-center opacity-10"></div>
+            <div className="absolute inset-0 bg-gradient-to-t from-[#080c14] via-[#080c14]/80 to-transparent"></div>
+            
+            <motion.div 
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              className="relative z-10 w-full max-w-md bg-[#0f1629]/90 backdrop-blur-xl border border-white/10 p-8 rounded-2xl shadow-2xl"
+            >
+              <div className="text-center mb-8">
+                <div className="text-4xl mb-2">⚽</div>
+                <h2 className="text-2xl font-orbitron font-black text-white tracking-widest uppercase mb-1">
+                  CHAMPION MASTER
+                </h2>
+                <p className="text-sm text-[#8892b0]">Bulut Kaydı ve Senkronizasyon</p>
+              </div>
+
+              <div className="flex gap-2 mb-6">
+                <button 
+                  onClick={() => handleSocialAuth('Google')}
+                  className="flex-1 bg-white hover:bg-gray-100 text-black py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-colors text-sm"
+                  disabled={authLoading}
+                >
+                  <img src="https://www.svgrepo.com/show/475656/google-color.svg" className="w-5 h-5" alt="Google" />
+                  Google
+                </button>
+                <button 
+                  onClick={() => handleSocialAuth('Facebook')}
+                  className="flex-1 bg-[#1877F2] hover:bg-[#166fe5] text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-colors text-sm"
+                  disabled={authLoading}
+                >
+                  <img src="https://www.svgrepo.com/show/475647/facebook-color.svg" className="w-5 h-5 invert brightness-0" alt="Facebook" />
+                  Facebook
+                </button>
+              </div>
+
+              <div className="flex items-center gap-4 mb-6">
+                <div className="h-px bg-white/10 flex-1"></div>
+                <div className="text-xs text-[#8892b0] uppercase tracking-wider">veya e-posta ile</div>
+                <div className="h-px bg-white/10 flex-1"></div>
+              </div>
+
+              <form onSubmit={handleAuth} className="space-y-4">
+                {authError && <div className="p-3 bg-red-500/20 border border-red-500/30 rounded-lg text-red-400 text-xs font-bold text-center">{authError}</div>}
+                
+                <div>
+                  <input 
+                    type="email" 
+                    required 
+                    placeholder="E-posta adresiniz" 
+                    value={authEmail}
+                    onChange={e => setAuthEmail(e.target.value)}
+                    className="w-full bg-[#0a0e1a] border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#00c8ff] transition-colors"
+                  />
+                </div>
+                <div>
+                  <input 
+                    type="password" 
+                    required 
+                    placeholder="Şifreniz" 
+                    value={authPassword}
+                    onChange={e => setAuthPassword(e.target.value)}
+                    className="w-full bg-[#0a0e1a] border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#00c8ff] transition-colors"
+                  />
+                </div>
+                
+                <button 
+                  type="submit" 
+                  disabled={authLoading}
+                  className="w-full bg-gradient-to-r from-[#00c8ff] to-[#0090b8] text-white py-3.5 rounded-xl font-bold uppercase tracking-widest shadow-[0_0_20px_rgba(0,200,255,0.3)] transition-transform hover:scale-[1.02] active:scale-95 disabled:opacity-50"
+                >
+                  {authLoading ? "İşleniyor..." : (authMode === "login" ? "Giriş Yap" : "Kayıt Ol")}
+                </button>
+              </form>
+
+              <div className="mt-6 text-center">
+                <button 
+                  onClick={() => setAuthMode(authMode === "login" ? "register" : "login")}
+                  className="text-xs text-[#8892b0] hover:text-white transition-colors"
+                  disabled={authLoading}
+                >
+                  {authMode === "login" ? "Hesabın yok mu? Yeni kayıt oluştur." : "Zaten hesabın var mı? Giriş yap."}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+
         {/* MAIN MENU */}
         {screen === "menu" && (
           <motion.div 
@@ -113,6 +297,16 @@ export function HomeContainer() {
             <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-[#00c8ff]/10 blur-[100px] rounded-full mix-blend-screen"></div>
 
             <div className="relative z-10 w-full h-full max-w-7xl mx-auto flex items-center p-8 md:p-16">
+              <div className="absolute top-8 right-8 z-20 flex items-center gap-4">
+                <div className="text-right">
+                  <div className="text-xs text-[#8892b0] uppercase tracking-wider">Bağlı Hesap</div>
+                  <div className="font-bold text-white text-sm">{currentUser?.email || "Oyuncu"}</div>
+                </div>
+                <button onClick={handleLogout} className="px-4 py-2 bg-red-500/10 text-red-500 hover:bg-red-500/20 border border-red-500/30 rounded-lg text-xs font-bold uppercase transition-colors">
+                  Çıkış Yap
+                </button>
+              </div>
+
               <div className="flex-1 max-w-2xl">
                 <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.2 }}>
                   <h1 className="text-6xl md:text-[80px] leading-none font-orbitron font-black tracking-tighter text-white mb-4 drop-shadow-[0_10px_20px_rgba(0,0,0,0.5)]">
@@ -128,21 +322,10 @@ export function HomeContainer() {
 
                 <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.3 }} className="flex flex-col sm:flex-row gap-4 mb-12">
                   <button 
-                    disabled={!myClubId}
-                    onClick={handleContinue}
-                    className={`px-8 py-4 rounded-xl font-bold tracking-widest uppercase transition-all shadow-lg border ${
-                      myClubId 
-                        ? 'bg-[#0f1629]/80 border-[#00c8ff]/50 text-white hover:bg-[#00c8ff]/10 hover:border-[#00c8ff] shadow-[0_0_20px_rgba(0,200,255,0.15)]' 
-                        : 'bg-white/5 border-white/10 text-white/30 cursor-not-allowed'
-                    }`}
-                  >
-                    Kariyerine Devam Et
-                  </button>
-                  <button 
-                    onClick={handleStartNewGame}
+                    onClick={handleOpenSlots}
                     className="px-8 py-4 rounded-xl font-bold tracking-widest uppercase transition-all shadow-lg border border-transparent bg-gradient-to-r from-[#f5c842] to-[#c99a00] text-black hover:scale-105 hover:shadow-[0_0_25px_rgba(245,200,66,0.4)]"
                   >
-                    ⚽ Yeni Kariyere Başla
+                    ⚽ KARİYER SEÇİMİ
                   </button>
                 </motion.div>
 
@@ -176,6 +359,76 @@ export function HomeContainer() {
                   <div className="text-[#e8eaf6] text-lg font-rajdhani font-semibold leading-tight group-hover:text-[#f5c842] transition-colors">Akademi oyuncularını A takıma almadan önce gelişimlerini takip et.</div>
                 </div>
               </motion.div>
+            </div>
+          </motion.div>
+        )}
+
+        {/* SLOTS SCREEN */}
+        {screen === "slots" && (
+          <motion.div 
+            key="slots"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="absolute inset-0 z-50 flex items-center justify-center p-4 sm:p-8 bg-black/80 backdrop-blur-sm"
+          >
+            <div className="bg-[#0a0e1a] border border-white/10 rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto shadow-2xl relative flex flex-col">
+              <div className="sticky top-0 z-10 bg-[#0a0e1a]/90 backdrop-blur-md p-6 border-b border-white/10 flex justify-between items-center">
+                <h2 className="text-3xl font-orbitron font-black text-white tracking-widest uppercase">Kariyer Seçimi</h2>
+                <button 
+                  onClick={() => setScreen("menu")}
+                  className="text-[#8892b0] hover:text-white"
+                >
+                  ✕
+                </button>
+              </div>
+
+              <div className="p-6 grid gap-6 md:grid-cols-3">
+                {slots.map((s) => {
+                  const club = s.clubId ? ChampionMasterData.clubs.find(c => c.id === s.clubId) : null;
+                  return (
+                    <motion.div 
+                      key={s.slot}
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      onClick={() => handleSelectSlot(s)}
+                      className={`relative p-6 rounded-xl border cursor-pointer overflow-hidden group ${
+                        s.isEmpty 
+                          ? 'bg-white/5 border-white/10 hover:border-[#00c8ff]/50' 
+                          : 'bg-gradient-to-b from-[#0f1629] to-[#0a0e1a] border-[#00c8ff]/30 shadow-[0_0_15px_rgba(0,200,255,0.1)]'
+                      }`}
+                    >
+                      <div className="text-xs font-bold text-[#8892b0] tracking-[2px] uppercase mb-4">
+                        Kayıt Slotu {s.slot}
+                      </div>
+
+                      {s.isEmpty ? (
+                        <div className="h-32 flex flex-col items-center justify-center text-center">
+                          <div className="text-4xl mb-2 opacity-50 group-hover:opacity-100 transition-opacity">➕</div>
+                          <div className="font-bold text-[#00c8ff]">Yeni Kariyer Başlat</div>
+                        </div>
+                      ) : (
+                        <div>
+                          <div className="font-orbitron font-bold text-xl text-white mb-1 truncate">{club?.name || 'Bilinmiyor'}</div>
+                          <div className="text-sm text-[#00e676] mb-4">Sezon {s.season} • Hafta {s.week}</div>
+                          <div className="text-xs text-[#8892b0] uppercase tracking-wider mb-1">Menajer</div>
+                          <div className="font-bold text-white truncate mb-4">{s.managerName}</div>
+                          <div className="text-xs text-[#8892b0] uppercase tracking-wider mb-1">Kasa</div>
+                          <div className="font-bold text-[#f5c842]">{formatMoney(s.balance)}</div>
+                          
+                          <button 
+                            onClick={(e) => handleDeleteSlot(s.slot, e)}
+                            className="absolute top-4 right-4 w-8 h-8 rounded-full bg-red-500/20 text-red-500 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-500 hover:text-white"
+                            title="Kariyeri Sil"
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      )}
+                    </motion.div>
+                  );
+                })}
+              </div>
             </div>
           </motion.div>
         )}

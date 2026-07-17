@@ -29,11 +29,13 @@ export function MatchContainer() {
 
   // Devre Arası ve Oyuncu Değişikliği State'leri
   const [isHalfTime, setIsHalfTime] = useState(false);
+  const [injuryPause, setInjuryPause] = useState(null);
   const [currentLineup, setCurrentLineup] = useState([]);
   const [subsLeft, setSubsLeft] = useState(5);
   const [selectedSubOut, setSelectedSubOut] = useState(null);
   const [selectedSubIn, setSelectedSubIn] = useState(null);
   const [currentTactics, setCurrentTactics] = useState({ style: 'balanced', press: 'medium', tempo: 'normal' });
+  const [isMatchPaused, setIsMatchPaused] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -116,8 +118,18 @@ export function MatchContainer() {
     const audio = getAudioEngine();
     if (audio) audio.playStartWhistle();
 
-    const oppSquad = ChampionMasterData.players.filter(p => p.clubId === oppClubId);
-    const myClubPlayers = ChampionMasterData.players.filter(p => lineup.includes(p.id));
+    const state = useGameStore.getState();
+    const oppSquad = ChampionMasterData.players.filter(p => p.clubId === oppClubId).map(p => ({
+      ...p,
+      fitness: 80 + Math.random() * 20,
+      morale: 65 + Math.random() * 25
+    }));
+    
+    const myClubPlayers = ChampionMasterData.players.filter(p => lineup.includes(p.id)).map(p => ({
+      ...p,
+      fitness: state.squadFitness[p.id] || 100,
+      morale: state.morale || 70
+    }));
     
     // CPU için otomatik taktikler belirleyebiliriz, şimdilik dengeli olsun
     const cpuTactics = { style: 'balanced', press: 'medium', tempo: 'normal' };
@@ -135,6 +147,15 @@ export function MatchContainer() {
 
     const me = new MatchEngine(homeTeam, awayTeam, homeSquad, awaySquad, homeTactics, awayTactics, aiData);
     
+    me.callbacks.playerInjured = (data) => {
+      const isMyTeam = data.team === (homeTeam.id === myClubId ? 'home' : 'away');
+      if (isMyTeam) {
+        me.paused = true;
+        setInjuryPause(data.player);
+        setSelectedSubOut(data.player.id);
+      }
+    };
+
     if (pitch) pitch.reset();
 
     me.simulate(
@@ -142,6 +163,7 @@ export function MatchContainer() {
         if (data.type === 'tick') {
           setMinute(data.minute);
           setStats({ ...data.stats }); // Fix React reactivity
+          setIsMatchPaused(me.paused);
           return;
         }
 
@@ -165,7 +187,11 @@ export function MatchContainer() {
         if (audio) audio.playFullTimeWhistle();
 
         const { processMatchResult } = useGameStore.getState();
-        processMatchResult(result, true);
+        processMatchResult({
+          ...result,
+          homeClubId: homeTeam.id,
+          awayClubId: awayTeam.id
+        }, true);
 
         // Fetch Post-Match Report
         setIsAiPostMatchLoading(true);
@@ -193,18 +219,112 @@ export function MatchContainer() {
     if (!selectedSubOut || !selectedSubIn || subsLeft <= 0) return;
     setCurrentLineup(prev => prev.filter(id => id !== selectedSubOut).concat(selectedSubIn));
     setSubsLeft(prev => prev - 1);
-    const inPlayer = ChampionMasterData.players.find(p => p.id === selectedSubIn);
+    const state = useGameStore.getState();
+    const inPlayerRaw = ChampionMasterData.players.find(p => p.id === selectedSubIn);
+    const inPlayer = {
+      ...inPlayerRaw,
+      fitness: state.squadFitness[selectedSubIn] || 100,
+      morale: state.morale || 70
+    };
     engine.substitute(isHome ? 'home' : 'away', selectedSubOut, inPlayer);
     setSelectedSubOut(null);
     setSelectedSubIn(null);
   };
 
+  const autoSubstitute = () => {
+    if (subsLeft <= 0) return;
+    const engineSquad = isHome ? engine?.homeSquad : engine?.awaySquad;
+    if (!engineSquad) return;
+    
+    let currentSubsLeft = subsLeft;
+    let newLineup = [...currentLineup];
+    
+    // En yorgun oyuncuları bul
+    const tiredPlayers = [...engineSquad]
+      .filter(p => newLineup.includes(p.id))
+      .sort((a, b) => a.matchFitness - b.matchFitness);
+      
+    // Yedekleri bul
+    const benchIds = squad.filter(id => !newLineup.includes(id));
+    const state = useGameStore.getState();
+    const usedBenchIds = [];
+    
+    for (const tired of tiredPlayers) {
+      if (currentSubsLeft <= 0) break;
+      if (tired.matchFitness > 88) continue; // İlk yarıda yorulmuş olanlar genelde 80-85 civarına düşer
+      
+      const tiredData = ChampionMasterData.players.find(x => x.id === tired.id);
+      if (!tiredData) continue;
+      
+      const availableBench = benchIds
+        .filter(id => !usedBenchIds.includes(id))
+        .map(id => ChampionMasterData.players.find(x => x.id === id))
+        .filter(Boolean)
+        .sort((a, b) => b.overall - a.overall);
+        
+      let bestSub = availableBench.find(p => p.position === tiredData.position);
+      if (!bestSub) {
+         if (['CB', 'LB', 'RB'].includes(tiredData.position)) bestSub = availableBench.find(p => ['CB', 'LB', 'RB'].includes(p.position));
+         else if (['CDM', 'CM', 'CAM', 'LM', 'RM'].includes(tiredData.position)) bestSub = availableBench.find(p => ['CDM', 'CM', 'CAM', 'LM', 'RM'].includes(p.position));
+         else if (['ST', 'CF', 'LW', 'RW'].includes(tiredData.position)) bestSub = availableBench.find(p => ['ST', 'CF', 'LW', 'RW'].includes(p.position));
+      }
+      if (tiredData.position === 'GK') bestSub = availableBench.find(p => p.position === 'GK');
+      
+      if (bestSub) {
+        newLineup = newLineup.map(id => id === tired.id ? bestSub.id : id);
+        usedBenchIds.push(bestSub.id);
+        
+        const inPlayer = {
+          ...bestSub,
+          fitness: state.squadFitness[bestSub.id] || 100,
+          morale: state.morale || 70
+        };
+        engine.substitute(isHome ? 'home' : 'away', tired.id, inPlayer);
+        currentSubsLeft--;
+      }
+    }
+    
+    setCurrentLineup(newLineup);
+    setSubsLeft(currentSubsLeft);
+    setSelectedSubOut(null);
+    setSelectedSubIn(null);
+  };
+
   const resumeMatch = () => {
+    if (injuryPause) {
+      if (currentLineup.includes(injuryPause.id)) {
+        // Eğer hala sahadaysa ve hakkımız yoksa 10 kişi devam etmeli (Bunu engine desteklemediği için mecburi şimdilik uyaralım)
+        if (subsLeft > 0) {
+          alert("Sakatlanan oyuncuyu değiştirmek zorundasınız!");
+          return;
+        }
+      }
+      setInjuryPause(null);
+    }
     setIsHalfTime(false);
+    setIsMatchPaused(false);
     engine.updateTactics(isHome ? 'home' : 'away', currentTactics);
     engine.resume();
     const audio = getAudioEngine();
     if (audio) audio.playStartWhistle();
+  };
+
+  const togglePause = () => {
+    if (!engine) return;
+    if (engine.paused) {
+      engine.resume();
+      setIsMatchPaused(false);
+    } else {
+      engine.paused = true;
+      setIsMatchPaused(true);
+    }
+  };
+
+  const fastForward = () => {
+    if (!engine) return;
+    engine.speed = 3;
+    engine.resume();
+    setIsMatchPaused(false);
   };
 
   // --- POST-MATCH SCREEN ---
@@ -259,7 +379,7 @@ export function MatchContainer() {
             ) : aiPostMatchReport ? (
               <div className="mt-8 bg-black/40 p-6 rounded-xl border border-[#00c8ff]/20 text-left relative overflow-hidden">
                 <div className="absolute top-0 right-0 p-4 opacity-10 text-6xl">📰</div>
-                <h3 className="font-orbitron font-black text-2xl text-[#00c8ff] mb-3 leading-tight">{aiPostMatchReport.headline}</h3>
+                <h3 className="font-rajdhani font-black text-2xl sm:text-3xl text-[#00c8ff] mb-3 leading-tight">{aiPostMatchReport.headline}</h3>
                 <p className="text-[#e8eaf6] text-sm leading-relaxed" dangerouslySetInnerHTML={{ __html: aiPostMatchReport.report }}></p>
               </div>
             ) : null}
@@ -384,10 +504,20 @@ export function MatchContainer() {
           )}
           {engine && (
             <>
-              <button className="bg-white/10 hover:bg-white/20 text-white px-6 py-3 rounded-xl font-bold tracking-widest uppercase border border-white/10 transition-colors">
-                ⏸ Duraklat
+              <button 
+                onClick={togglePause}
+                className={`px-6 py-3 rounded-xl font-bold tracking-widest uppercase border transition-colors ${
+                  isMatchPaused 
+                    ? 'bg-[#00e676]/20 text-[#00e676] border-[#00e676]/50 hover:bg-[#00e676]/30' 
+                    : 'bg-white/10 hover:bg-white/20 text-white border-white/10'
+                }`}
+              >
+                {isMatchPaused ? '▶️ Devam Et' : '⏸ Duraklat'}
               </button>
-              <button className="bg-[#ff1744]/20 hover:bg-[#ff1744]/40 text-[#ff1744] border border-[#ff1744]/30 px-6 py-3 rounded-xl font-bold tracking-widest uppercase transition-colors">
+              <button 
+                onClick={fastForward}
+                className="bg-[#ff1744]/20 hover:bg-[#ff1744]/40 text-[#ff1744] border border-[#ff1744]/30 px-6 py-3 rounded-xl font-bold tracking-widest uppercase transition-colors"
+              >
                 ⏩ Hızlı Bitir
               </button>
             </>
@@ -483,18 +613,25 @@ export function MatchContainer() {
         </div>
       </div>
 
-      {/* Devre Arası Modalı */}
-      {isHalfTime && (
+      {/* Devre Arası / Sakatlık Modalı */}
+      {(isHalfTime || injuryPause) && (
         <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-4 sm:p-6">
           <div className="bg-[#0f1629] w-full max-w-[1200px] h-full max-h-[92vh] flex flex-col rounded-3xl border border-[#00c8ff]/30 shadow-[0_0_60px_rgba(0,200,255,0.15)] relative overflow-hidden">
             
             {/* Dekoratif Efekt */}
-            <div className="absolute top-0 inset-x-0 h-32 bg-gradient-to-b from-[#00c8ff]/10 to-transparent pointer-events-none"></div>
+            <div className={`absolute top-0 inset-x-0 h-32 bg-gradient-to-b ${injuryPause ? 'from-red-500/20' : 'from-[#00c8ff]/10'} to-transparent pointer-events-none`}></div>
 
             {/* Header */}
             <div className="p-5 sm:p-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-white/10 bg-black/20 flex-shrink-0 relative z-10">
               <div>
-                <h2 className="text-2xl sm:text-4xl font-orbitron font-black text-transparent bg-clip-text bg-gradient-to-r from-white to-[#00c8ff] uppercase tracking-widest leading-none">Devre Arası</h2>
+                <h2 className={`text-2xl sm:text-4xl font-rajdhani font-black text-transparent bg-clip-text bg-gradient-to-r ${injuryPause ? 'from-red-500 to-red-300' : 'from-white to-[#00c8ff]'} uppercase tracking-widest leading-none`}>
+                  {injuryPause ? "Zorunlu Değişiklik" : "Devre Arası"}
+                </h2>
+                {injuryPause && (
+                  <p className="text-red-400 mt-1 font-bold text-sm sm:text-base">
+                    🚨 {injuryPause.lastName} sakatlandı ve oyuna devam edemiyor!
+                  </p>
+                )}
                 <div className="text-sm sm:text-xl font-rajdhani font-bold text-[#e8eaf6] mt-2 flex items-center gap-2">
                   <span>{homeTeam.name}</span>
                   <span className="bg-black/50 px-3 py-1 rounded-lg text-[#00c8ff] border border-white/10">{score.home} - {score.away}</span>
@@ -503,9 +640,9 @@ export function MatchContainer() {
               </div>
               <button 
                 onClick={resumeMatch}
-                className="w-full sm:w-auto bg-gradient-to-r from-[#00e676] to-[#00b25c] text-white px-8 py-4 rounded-xl text-sm sm:text-base font-orbitron font-black uppercase tracking-wider shadow-[0_0_20px_rgba(0,230,118,0.3)] hover:scale-105 transition-all"
+                className={`w-full sm:w-auto bg-gradient-to-r ${injuryPause ? 'from-red-500 to-red-400 shadow-[0_0_20px_rgba(239,68,68,0.3)]' : 'from-[#00e676] to-[#00b25c] shadow-[0_0_20px_rgba(0,230,118,0.3)]'} text-white px-4 sm:px-8 py-3 sm:py-4 rounded-xl text-xs sm:text-base font-rajdhani font-black uppercase tracking-wider hover:scale-105 transition-all whitespace-normal text-center break-words`}
               >
-                ▶ İkinci Yarıya Başla
+                ▶ {injuryPause ? "Maça Devam Et" : "İkinci Yarıya Başla"}
               </button>
             </div>
 
@@ -515,7 +652,7 @@ export function MatchContainer() {
               {/* Sol Kolon - Sahadakiler */}
               <div className="flex-1 flex flex-col bg-black/30 rounded-2xl border border-white/5 overflow-hidden">
                 <div className="p-4 sm:p-5 bg-black/40 border-b border-white/5 flex items-center justify-between flex-shrink-0">
-                  <h3 className="text-[#00c8ff] font-orbitron font-bold text-sm sm:text-base uppercase tracking-wider">Sahadakiler</h3>
+                  <h3 className="text-[#00c8ff] font-rajdhani font-bold text-sm sm:text-base uppercase tracking-wider">Sahadakiler</h3>
                   <span className="text-[10px] sm:text-xs bg-red-500/20 text-red-400 px-3 py-1 rounded-md font-bold uppercase">Oyundan Çıkart</span>
                 </div>
                 <div className="flex-1 overflow-y-auto custom-scrollbar p-4">
@@ -524,6 +661,10 @@ export function MatchContainer() {
                       const p = ChampionMasterData.players.find(x => x.id === pid);
                       if (!p) return null;
                       const isSelected = selectedSubOut === pid;
+                      const engineSquad = isHome ? engine?.homeSquad : engine?.awaySquad;
+                      const matchPlayer = engineSquad?.find(x => x.id === pid);
+                      const fitness = matchPlayer?.matchFitness !== undefined ? Math.round(matchPlayer.matchFitness) : 100;
+                      
                       return (
                         <div 
                           key={pid}
@@ -531,8 +672,21 @@ export function MatchContainer() {
                           className={`flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all border ${isSelected ? 'bg-red-500/20 border-red-500/50 shadow-[0_0_15px_rgba(239,68,68,0.2)]' : 'bg-white/5 border-transparent hover:bg-white/10'}`}
                         >
                           <div className="font-orbitron font-bold text-xs sm:text-sm w-6 text-center text-[#8892b0]">{p.position}</div>
-                          <div className="flex-1 font-rajdhani font-bold text-sm sm:text-base text-white truncate">{p.name}</div>
-                          <div className="text-[#00e676] font-bold text-sm">{p.overall}</div>
+                          <div className="flex-1 font-rajdhani font-bold text-sm sm:text-base text-white truncate">
+                            {p.firstName} {p.lastName}
+                          </div>
+                          
+                          {/* Kondisyon Barı */}
+                          <div className="w-16 sm:w-20 flex flex-col gap-1 items-end">
+                            <span className={`text-[9px] font-bold ${fitness < 60 ? 'text-red-400' : fitness < 80 ? 'text-yellow-400' : 'text-[#00e676]'}`}>
+                              %{fitness}
+                            </span>
+                            <div className="w-full h-1 bg-black/50 rounded-full overflow-hidden">
+                              <div className={`h-full ${fitness < 60 ? 'bg-red-500' : fitness < 80 ? 'bg-yellow-500' : 'bg-[#00e676]'}`} style={{ width: `${fitness}%` }}></div>
+                            </div>
+                          </div>
+
+                          <div className="text-[#00c8ff] font-bold text-sm w-6 text-right">{p.overall}</div>
                         </div>
                       );
                     })}
@@ -546,7 +700,7 @@ export function MatchContainer() {
                 {/* Yedekler */}
                 <div className="flex-1 flex flex-col bg-black/30 rounded-2xl border border-white/5 overflow-hidden">
                   <div className="p-4 sm:p-5 bg-black/40 border-b border-white/5 flex items-center justify-between flex-shrink-0">
-                    <h3 className="text-[#00c8ff] font-orbitron font-bold text-sm sm:text-base uppercase tracking-wider">Yedek Kulübesi</h3>
+                    <h3 className="text-[#00c8ff] font-rajdhani font-bold text-sm sm:text-base uppercase tracking-wider">Yedek Kulübesi</h3>
                     <span className="text-[10px] sm:text-xs bg-[#00e676]/20 text-[#00e676] px-3 py-1 rounded-md font-bold uppercase">Oyuna Al</span>
                   </div>
                   <div className="flex-1 overflow-y-auto custom-scrollbar p-4">
@@ -555,6 +709,9 @@ export function MatchContainer() {
                         const p = ChampionMasterData.players.find(x => x.id === pid);
                         if (!p) return null;
                         const isSelected = selectedSubIn === pid;
+                        const state = useGameStore.getState();
+                        const fitness = state.squadFitness[pid] || 100;
+
                         return (
                           <div 
                             key={pid}
@@ -562,8 +719,18 @@ export function MatchContainer() {
                             className={`flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all border ${isSelected ? 'bg-[#00e676]/20 border-[#00e676]/50 shadow-[0_0_15px_rgba(0,230,118,0.2)]' : 'bg-white/5 border-transparent hover:bg-white/10'}`}
                           >
                             <div className="font-orbitron font-bold text-xs sm:text-sm w-6 text-center text-[#8892b0]">{p.position}</div>
-                            <div className="flex-1 font-rajdhani font-bold text-sm sm:text-base text-white truncate">{p.name}</div>
-                            <div className="text-[#00e676] font-bold text-sm">{p.overall}</div>
+                            <div className="flex-1 font-rajdhani font-bold text-sm sm:text-base text-white truncate">
+                              {p.firstName} {p.lastName}
+                            </div>
+                            
+                            <div className="w-16 sm:w-20 flex flex-col gap-1 items-end">
+                              <span className={`text-[9px] font-bold ${fitness < 60 ? 'text-red-400' : fitness < 80 ? 'text-yellow-400' : 'text-[#00e676]'}`}>%{fitness}</span>
+                              <div className="w-full h-1 bg-black/50 rounded-full overflow-hidden">
+                                <div className={`h-full ${fitness < 60 ? 'bg-red-500' : fitness < 80 ? 'bg-yellow-500' : 'bg-[#00e676]'}`} style={{ width: `${fitness}%` }}></div>
+                              </div>
+                            </div>
+
+                            <div className="text-[#00c8ff] font-bold text-sm w-6 text-right">{p.overall}</div>
                           </div>
                         );
                       })}
@@ -577,13 +744,21 @@ export function MatchContainer() {
                     <div className="text-sm text-[#8892b0] flex items-center gap-3">
                       Değişiklik Hakkı: <span className="bg-white/10 text-white px-3 py-1 rounded-lg font-bold text-lg">{subsLeft}</span>
                     </div>
-                    <button 
-                      disabled={!selectedSubOut || !selectedSubIn || subsLeft <= 0}
-                      onClick={handleSubstitution}
-                      className="w-full sm:w-auto bg-[#00c8ff] text-black px-6 py-3 rounded-xl text-sm font-bold uppercase tracking-wider disabled:opacity-30 disabled:cursor-not-allowed hover:bg-white transition-all shadow-[0_0_15px_rgba(0,200,255,0.2)]"
-                    >
-                      Değişikliği Onayla
-                    </button>
+                    <div className="flex gap-2 w-full sm:w-auto">
+                      <button
+                        onClick={autoSubstitute}
+                        className="bg-gradient-to-r from-[#f5c842]/20 to-[#d4a017]/20 border border-[#f5c842]/50 text-[#f5c842] hover:bg-[#f5c842]/30 px-4 py-3 rounded-xl text-xs font-bold uppercase tracking-wider flex-1 sm:flex-none shadow-[0_0_15px_rgba(245,200,66,0.1)] transition-colors"
+                      >
+                        ⚡ Otomatik
+                      </button>
+                      <button 
+                        disabled={!selectedSubOut || !selectedSubIn || subsLeft <= 0}
+                        onClick={handleSubstitution}
+                        className="bg-[#00c8ff] text-black px-4 sm:px-6 py-3 rounded-xl text-xs sm:text-sm font-bold uppercase tracking-wider disabled:opacity-30 disabled:cursor-not-allowed hover:bg-white transition-all shadow-[0_0_15px_rgba(0,200,255,0.2)] flex-1 sm:flex-none"
+                      >
+                        Onayla
+                      </button>
+                    </div>
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <select 

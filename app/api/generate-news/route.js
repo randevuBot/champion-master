@@ -36,6 +36,7 @@ export async function POST(req) {
     Bu oyuncular(dan biri veya ikisi) hakkında takım içi bir haber, dedikodu, idman kavgası, transfer söylentisi veya eğlenceli bir magazinsel olay uydur.
     
     KURALLAR:
+    - ÖNEMLİ: KESİNLİKLE VE SADECE TÜRKÇE YAZACAKSIN. İNGİLİZCE KULLANMAK YASAKTIR.
     - Mutlaka çok kısa olsun (Maksimum 2-3 cümle).
     - JSON formatında dön! Asla markdown ('json' vb.) kullanma, sadece saf JSON metni dön.
     - JSON Objesi şu formatta olmalı:

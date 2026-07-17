@@ -8,12 +8,19 @@ import { motion, AnimatePresence } from "framer-motion";
 import { GameEngine } from "@/lib/game/engine";
 
 export function SquadContainer() {
-  const { squad, lineup, setLineup, myClubId, formation, setCustomPositions } = useGameStore();
+  const { squad, lineup, setLineup, myClubId, formation, setCustomPositions, squadFitness, injured, suspensions, playerStats, season } = useGameStore();
   const [filter, setFilter] = useState("all");
 
-  const squadPlayers = ChampionMasterData.players.filter(p => squad.includes(p.id));
-  
-  const filteredPlayers = squadPlayers.filter(p => {
+  const myPlayers = ChampionMasterData.players
+    .filter(p => squad.includes(p.id))
+    .map(p => {
+      // Dinamik rating ve yaş bilgisi
+      const dynRating = playerStats[p.id]?.rating || p.overall;
+      const dynAge = (p.age || 22) + (season - 1);
+      return { ...p, overall: dynRating, age: dynAge };
+    });
+
+  const filteredPlayers = myPlayers.filter(p => {
     if (filter === "all") return true;
     if (filter === "GK") return p.position === "GK";
     if (filter === "DEF") return ["CB", "LB", "RB"].includes(p.position);
@@ -156,7 +163,7 @@ export function SquadContainer() {
                   <div className="font-rajdhani font-bold text-lg text-white leading-tight mb-1 truncate">{p.lastName}</div>
                   <div className="text-[10px] text-[#8892b0] tracking-[1px] uppercase mb-3 truncate">{p.firstName}</div>
                   
-                  <div className="grid grid-cols-2 gap-1 border-t border-white/5 pt-3">
+                  <div className="grid grid-cols-2 gap-1 border-t border-white/5 pt-3 mb-3">
                     <div>
                       <div className="text-[9px] text-[#4a5568] uppercase tracking-wider">Yaş</div>
                       <div className="font-bold text-[#e8eaf6] text-xs">{p.age}</div>
@@ -164,6 +171,19 @@ export function SquadContainer() {
                     <div>
                       <div className="text-[9px] text-[#4a5568] uppercase tracking-wider">Değer</div>
                       <div className="font-bold text-[#e8eaf6] text-xs">€{(p.value / 1000000).toFixed(1)}M</div>
+                    </div>
+                  </div>
+                  
+                  {/* Fitness Bar */}
+                  <div className="border-t border-white/5 pt-2">
+                    <div className="flex justify-between items-center mb-1">
+                      <span className="text-[9px] text-[#4a5568] uppercase tracking-wider">Kondisyon</span>
+                      <span className={`text-[9px] font-bold ${(!squadFitness[p.id] || squadFitness[p.id] >= 80) ? 'text-[#00e676]' : squadFitness[p.id] >= 60 ? 'text-yellow-400' : 'text-red-400'}`}>
+                        {squadFitness[p.id] || 100}%
+                      </span>
+                    </div>
+                    <div className="h-1 w-full bg-black/50 rounded-full overflow-hidden">
+                      <div className={`h-full ${(!squadFitness[p.id] || squadFitness[p.id] >= 80) ? 'bg-gradient-to-r from-[#00e676] to-[#00b25c]' : squadFitness[p.id] >= 60 ? 'bg-yellow-500' : 'bg-red-500'}`} style={{ width: `${squadFitness[p.id] || 100}%` }}></div>
                     </div>
                   </div>
                 </div>

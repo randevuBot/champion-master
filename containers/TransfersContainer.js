@@ -7,7 +7,7 @@ import { formatMoney } from "@/lib/game/utils";
 import { motion, AnimatePresence } from "framer-motion";
 
 export function TransfersContainer() {
-  const { squad, finances, buyPlayer, myClubId } = useGameStore();
+  const { squad, finances, buyPlayer, myClubId, scoutedPlayers, scoutPlayer } = useGameStore();
   const [search, setSearch] = useState("");
   const [minRating, setMinRating] = useState(60);
   const [maxAge, setMaxAge] = useState(40);
@@ -46,6 +46,14 @@ export function TransfersContainer() {
     } else {
       alert(`${selectedPlayer.lastName} transferi başarıyla tamamlandı!`);
       setSelectedPlayer(null);
+    }
+  };
+
+  const handleScout = () => {
+    if (!selectedPlayer) return;
+    const res = scoutPlayer(selectedPlayer.id, 25000);
+    if (res && !res.success) {
+      alert(res.reason);
     }
   };
 
@@ -163,7 +171,9 @@ export function TransfersContainer() {
                       </div>
                       
                       <div className="text-right">
-                        <div className={`font-orbitron font-bold text-lg ${getRatingColor(p.overall)}`}>{p.overall}</div>
+                        <div className={`font-orbitron font-bold text-lg ${scoutedPlayers?.includes(p.id) ? getRatingColor(p.overall) : 'text-[#8892b0]'}`}>
+                          {scoutedPlayers?.includes(p.id) ? p.overall : '??'}
+                        </div>
                         <div className="text-[10px] text-[#00e676] font-bold tracking-widest uppercase">€{(p.value).toFixed(1)}M</div>
                       </div>
                     </motion.div>
@@ -208,7 +218,9 @@ export function TransfersContainer() {
                 <div className="grid grid-cols-3 gap-2">
                   <div className="bg-[#0a0e1a] p-2 rounded-lg border border-white/5">
                     <div className="text-[9px] text-[#4a5568] uppercase tracking-wider mb-1">Derece</div>
-                    <div className={`font-orbitron font-bold text-lg ${getRatingColor(selectedPlayer.overall)}`}>{selectedPlayer.overall}</div>
+                    <div className={`font-orbitron font-bold text-lg ${scoutedPlayers?.includes(selectedPlayer.id) ? getRatingColor(selectedPlayer.overall) : 'text-[#8892b0]'}`}>
+                      {scoutedPlayers?.includes(selectedPlayer.id) ? selectedPlayer.overall : '??'}
+                    </div>
                   </div>
                   <div className="bg-[#0a0e1a] p-2 rounded-lg border border-white/5">
                     <div className="text-[9px] text-[#4a5568] uppercase tracking-wider mb-1">Piyasa Değeri</div>
@@ -216,7 +228,9 @@ export function TransfersContainer() {
                   </div>
                   <div className="bg-[#0a0e1a] p-2 rounded-lg border border-white/5">
                     <div className="text-[9px] text-[#4a5568] uppercase tracking-wider mb-1">Potansiyel</div>
-                    <div className="font-orbitron font-bold text-[#f5c842] text-lg">{selectedPlayer.potential}</div>
+                    <div className="font-orbitron font-bold text-[#f5c842] text-lg">
+                      {scoutedPlayers?.includes(selectedPlayer.id) ? selectedPlayer.potential : '??'}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -233,34 +247,60 @@ export function TransfersContainer() {
                   </div>
                 </div>
 
-                <div className="mb-6">
-                  <label className="block text-xs text-[#8892b0] font-bold uppercase tracking-wider mb-2">Transfer Teklifi</label>
-                  <div className="flex items-center gap-2 mb-2">
-                    <button className="w-10 h-10 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white font-bold" onClick={() => setOfferAmount(prev => Math.max(0, prev - 500000))}>-</button>
-                    <div className="flex-1 bg-[#0a0e1a] border border-[#00c8ff]/30 rounded-xl text-center py-2 text-lg font-orbitron font-bold text-[#00c8ff] shadow-[inset_0_0_10px_rgba(0,200,255,0.1)]">
-                      {formatMoney(offerAmount)}
+                {!scoutedPlayers?.includes(selectedPlayer.id) ? (
+                  <div className="mb-2">
+                    <div className="bg-[#f5c842]/10 border border-[#f5c842]/30 rounded-xl p-4 mb-4 text-center">
+                      <div className="text-2xl mb-2">🕵️‍♂️</div>
+                      <p className="text-[#f5c842] text-xs font-bold uppercase tracking-wider mb-1">Gizli Yetenek</p>
+                      <p className="text-[#8892b0] text-[10px]">Oyuncunun tam reytingini ve potansiyelini görmek için bir gözlemci göndermelisiniz.</p>
                     </div>
-                    <button className="w-10 h-10 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white font-bold" onClick={() => setOfferAmount(prev => prev + 500000)}>+</button>
+                    <motion.button 
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      className={`w-full py-3.5 rounded-xl font-bold tracking-widest uppercase transition-all shadow-lg text-sm
+                        ${finances?.balance >= 25000 
+                          ? 'bg-gradient-to-r from-[#8e2de2] to-[#4a00e0] text-white shadow-[0_0_20px_rgba(142,45,226,0.3)] border border-white/20' 
+                          : 'bg-red-500/20 text-red-400 border border-red-500/30 cursor-not-allowed'
+                        }
+                      `}
+                      onClick={handleScout}
+                      disabled={finances?.balance < 25000}
+                    >
+                      {finances?.balance < 25000 ? 'Yetersiz Bütçe' : 'Gözlemci Gönder (25.000 €)'}
+                    </motion.button>
                   </div>
-                  <div className="text-right text-[10px] text-[#4a5568] tracking-wider uppercase">
-                    Kalan Bütçe: {formatMoney((finances?.transferBudget || 0) - offerAmount)}
-                  </div>
-                </div>
+                ) : (
+                  <>
+                    <div className="mb-6">
+                      <label className="block text-xs text-[#8892b0] font-bold uppercase tracking-wider mb-2">Transfer Teklifi</label>
+                      <div className="flex items-center gap-2 mb-2">
+                        <button className="w-10 h-10 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white font-bold" onClick={() => setOfferAmount(prev => Math.max(0, prev - 500000))}>-</button>
+                        <div className="flex-1 bg-[#0a0e1a] border border-[#00c8ff]/30 rounded-xl text-center py-2 text-lg font-orbitron font-bold text-[#00c8ff] shadow-[inset_0_0_10px_rgba(0,200,255,0.1)]">
+                          {formatMoney(offerAmount)}
+                        </div>
+                        <button className="w-10 h-10 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white font-bold" onClick={() => setOfferAmount(prev => prev + 500000)}>+</button>
+                      </div>
+                      <div className="text-right text-[10px] text-[#4a5568] tracking-wider uppercase">
+                        Kalan Bütçe: {formatMoney((finances?.transferBudget || 0) - offerAmount)}
+                      </div>
+                    </div>
 
-                <motion.button 
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  className={`w-full py-3.5 rounded-xl font-bold tracking-widest uppercase transition-all shadow-lg text-sm
-                    ${offerAmount <= finances?.transferBudget 
-                      ? 'bg-gradient-to-r from-[#00c8ff] to-[#0090b8] text-white shadow-[0_0_20px_rgba(0,200,255,0.3)] border border-white/20' 
-                      : 'bg-red-500/20 text-red-400 border border-red-500/30 cursor-not-allowed'
-                    }
-                  `}
-                  onClick={handleOffer}
-                  disabled={offerAmount > finances?.transferBudget}
-                >
-                  {offerAmount > finances?.transferBudget ? 'Yetersiz Bütçe' : 'Teklif Yap 🤝'}
-                </motion.button>
+                    <motion.button 
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      className={`w-full py-3.5 rounded-xl font-bold tracking-widest uppercase transition-all shadow-lg text-sm
+                        ${offerAmount <= finances?.transferBudget 
+                          ? 'bg-gradient-to-r from-[#00c8ff] to-[#0090b8] text-white shadow-[0_0_20px_rgba(0,200,255,0.3)] border border-white/20' 
+                          : 'bg-red-500/20 text-red-400 border border-red-500/30 cursor-not-allowed'
+                        }
+                      `}
+                      onClick={handleOffer}
+                      disabled={offerAmount > finances?.transferBudget}
+                    >
+                      {offerAmount > finances?.transferBudget ? 'Yetersiz Bütçe' : 'Teklif Yap 🤝'}
+                    </motion.button>
+                  </>
+                )}
               </div>
             </motion.div>
           ) : (

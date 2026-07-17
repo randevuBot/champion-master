@@ -68,7 +68,18 @@ export function ClientLayout({ children }) {
           <Topbar onMenuClick={() => setSidebarOpen(prev => !prev)} />
           <main className="flex-1 overflow-y-auto overflow-x-hidden p-3 sm:p-5 md:p-6 lg:p-8 custom-scrollbar">
             <div className="max-w-[1400px] mx-auto w-full">
-              {children}
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={pathname}
+                  initial={{ opacity: 0, x: 40, scale: 0.95 }}
+                  animate={{ opacity: 1, x: 0, scale: 1 }}
+                  exit={{ opacity: 0, x: -40, scale: 0.95 }}
+                  transition={{ duration: 0.3, ease: "easeInOut" }}
+                  className="w-full"
+                >
+                  {children}
+                </motion.div>
+              </AnimatePresence>
             </div>
           </main>
         </div>
