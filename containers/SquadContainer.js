@@ -92,12 +92,12 @@ export function SquadContainer() {
       </div>
 
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
-        <div className="flex overflow-x-auto gap-2 pb-2 sm:pb-0 custom-scrollbar max-w-full">
+        <div className="flex flex-wrap gap-2 w-full">
           {tabs.map(tab => (
             <button 
               key={tab.id}
               onClick={() => setFilter(tab.id)}
-              className={`relative px-6 py-2.5 rounded-full text-sm font-bold tracking-wider uppercase whitespace-nowrap transition-colors z-10 ${filter === tab.id ? 'text-white' : 'text-[#8892b0] hover:text-[#e8eaf6] bg-[#141b2d] border border-white/5'}`}
+              className={`relative px-4 sm:px-6 py-2.5 rounded-full text-xs sm:text-sm font-bold tracking-wider uppercase transition-colors z-10 flex-1 sm:flex-none text-center ${filter === tab.id ? 'text-white' : 'text-[#8892b0] hover:text-[#e8eaf6] bg-[#141b2d] border border-white/5'}`}
             >
               {filter === tab.id && (
                 <motion.div

@@ -662,10 +662,10 @@ export function MatchContainer() {
             </div>
 
             {/* Body */}
-            <div className="flex flex-col lg:flex-row flex-1 overflow-hidden p-5 sm:p-8 gap-6 sm:gap-8 relative z-10">
+            <div className="flex flex-col lg:flex-row flex-1 overflow-y-auto lg:overflow-hidden p-5 sm:p-8 gap-6 sm:gap-8 relative z-10 custom-scrollbar">
               
               {/* Sol Kolon - Sahadakiler */}
-              <div className="flex-1 flex flex-col bg-black/30 rounded-2xl border border-white/5 overflow-hidden">
+              <div className="flex-1 flex flex-col bg-black/30 rounded-2xl border border-white/5 overflow-hidden min-h-[400px] lg:min-h-0 flex-shrink-0 lg:flex-shrink">
                 <div className="p-4 sm:p-5 bg-black/40 border-b border-white/5 flex items-center justify-between flex-shrink-0">
                   <h3 className="text-[#00c8ff] font-rajdhani font-bold text-sm sm:text-base uppercase tracking-wider">Sahadakiler</h3>
                   <span className="text-[10px] sm:text-xs bg-red-500/20 text-red-400 px-3 py-1 rounded-md font-bold uppercase">Oyundan Çıkart</span>
@@ -710,10 +710,10 @@ export function MatchContainer() {
               </div>
 
               {/* Sağ Kolon - Yedekler & Taktikler */}
-              <div className="flex-1 flex flex-col gap-6 sm:gap-8 overflow-hidden">
+              <div className="flex-1 flex flex-col gap-6 sm:gap-8 lg:overflow-hidden flex-shrink-0 lg:flex-shrink">
                 
                 {/* Yedekler */}
-                <div className="flex-1 flex flex-col bg-black/30 rounded-2xl border border-white/5 overflow-hidden">
+                <div className="flex-1 flex flex-col bg-black/30 rounded-2xl border border-white/5 overflow-hidden min-h-[400px] lg:min-h-0">
                   <div className="p-4 sm:p-5 bg-black/40 border-b border-white/5 flex items-center justify-between flex-shrink-0">
                     <h3 className="text-[#00c8ff] font-rajdhani font-bold text-sm sm:text-base uppercase tracking-wider">Yedek Kulübesi</h3>
                     <span className="text-[10px] sm:text-xs bg-[#00e676]/20 text-[#00e676] px-3 py-1 rounded-md font-bold uppercase">Oyuna Al</span>
