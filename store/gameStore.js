@@ -170,6 +170,7 @@ const defaultState = {
   news: [],
   playerStats: {},
   morale: 70,
+  chemistry: 85,
   isPlaying: false
 };
 
@@ -255,7 +256,11 @@ export const useGameStore = create(
             ...s.finances,
             transferBudget: s.finances.transferBudget - offerAmount,
             balance: s.finances.balance - offerAmount,
-            seasonExpenses: s.finances.seasonExpenses + offerAmount
+            seasonExpenses: s.finances.seasonExpenses + offerAmount,
+            history: [
+              { type: 'expense', amount: offerAmount, reason: `${player.lastName} Transfer Ücreti`, week: state.week },
+              ...s.finances.history
+            ]
           },
           transferHistory: [
             ...s.transferHistory,
@@ -264,10 +269,11 @@ export const useGameStore = create(
           playerStats: {
             ...s.playerStats,
             [playerId]: { goals: 0, assists: 0, appearances: 0, yellowCards: 0, redCards: 0, cleanSheets: 0, rating: player.overall }
-          }
+          },
+          chemistry: Math.max(0, (s.chemistry || 85) - 5) // Yeni transfer takım uyumunu bozar
         }));
 
-        get().addNews({ title: 'Transfer Başarılı', body: `${player.firstName} ${player.lastName} takıma katıldı!`, type: 'success' });
+        get().addNews({ title: 'Transfer Gerçekleşti', body: `${player.firstName} ${player.lastName} artık takımımızda!`, type: 'success' });
         return { success: true };
       },
 
@@ -607,6 +613,39 @@ export const useGameStore = create(
         // Transfer Teklifi (Haftalık %40 ihtimal)
         if (Math.random() > 0.6) {
           get().generateTransferOffers();
+        }
+
+
+
+        // Takım Uyumu ve Yıldız Oyuncu İsyanları (Görev 10)
+        if (myPlayers.length > 0) {
+          const sortedPlayers = [...myPlayers].sort((a,b) => b.overall - a.overall);
+          const topStars = sortedPlayers.slice(0, 5); // Takımın en iyi 5 oyuncusu
+          const benchedStars = topStars.filter(p => !state.startingXI.includes(p.id));
+          
+          let newChemistry = state.chemistry || 85;
+          
+          if (benchedStars.length > 0) {
+            newChemistry = Math.max(0, newChemistry - (benchedStars.length * 2));
+            
+            // %30 ihtimalle isyan olayı fırlat
+            if (Math.random() > 0.7) {
+              const rebel = benchedStars[Math.floor(Math.random() * benchedStars.length)];
+              fetch('/api/generate-rebellion', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ playerName: `${rebel.firstName} ${rebel.lastName}`, overall: rebel.overall })
+              }).then(r=>r.json()).then(data => {
+                if (data && data.subject) {
+                  get().addNews(data);
+                }
+              }).catch(err => console.error("Rebellion API Error:", err));
+            }
+          } else {
+            // Yıldızlar düzenli oynuyorsa uyum artar
+            newChemistry = Math.min(100, newChemistry + 1);
+          }
+          set({ chemistry: newChemistry });
         }
 
         // Oyuncu Gelişimi, Yaşlanma ve Emeklilik (Her 4 haftada bir raporlanır)

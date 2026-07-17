@@ -14,7 +14,7 @@ const itemVariants = {
 
 export function DashboardContainer() {
   const router = useRouter();
-  const { myClubId, week, fixtures, seasonStats, leagueTable, finances, manager, news, morale } = useGameStore();
+  const { myClubId, week, fixtures, seasonStats, leagueTable, finances, manager, news, morale, chemistry } = useGameStore();
   const [openSection, setOpenSection] = useState("club"); // Default open section
 
   if (!myClubId) return null;
@@ -63,15 +63,30 @@ export function DashboardContainer() {
           <h2 className="text-3xl sm:text-4xl font-rajdhani font-bold tracking-wide text-white mb-2">Hoş Geldin, <span className="text-[#00c8ff]">{manager?.name || "Menajer"}</span>!</h2>
           <p className="text-[#8892b0] text-sm sm:text-base mb-3">Kariyerinde <span className="text-white font-bold">{week}. Hafta</span>. Takımını başarıya taşı!</p>
           
-          <div className="flex items-center gap-3 bg-black/40 inline-flex px-4 py-2 rounded-xl border border-white/5">
-            <span className="text-xl">{morale >= 80 ? '🔥' : morale >= 60 ? '👍' : morale >= 40 ? '😐' : '😡'}</span>
-            <div>
-              <div className="text-[10px] text-[#8892b0] uppercase tracking-widest font-bold">Takım Morali</div>
-              <div className="flex items-center gap-2">
-                <div className="w-24 h-1.5 bg-black rounded-full overflow-hidden">
-                  <div className={`h-full ${morale >= 80 ? 'bg-[#00e676]' : morale >= 60 ? 'bg-[#00c8ff]' : morale >= 40 ? 'bg-[#f5c842]' : 'bg-[#ff1744]'}`} style={{ width: `${morale || 70}%` }}></div>
+          <div className="flex flex-wrap gap-4 mt-4">
+            <div className="flex items-center gap-3 bg-black/40 inline-flex px-4 py-2 rounded-xl border border-white/5">
+              <span className="text-xl">{morale >= 80 ? '🔥' : morale >= 60 ? '👍' : morale >= 40 ? '😐' : '😡'}</span>
+              <div>
+                <div className="text-[10px] text-[#8892b0] uppercase tracking-widest font-bold">Takım Morali</div>
+                <div className="flex items-center gap-2">
+                  <div className="w-24 h-1.5 bg-black rounded-full overflow-hidden">
+                    <div className={`h-full ${morale >= 80 ? 'bg-[#00e676]' : morale >= 60 ? 'bg-[#00c8ff]' : morale >= 40 ? 'bg-[#f5c842]' : 'bg-[#ff1744]'}`} style={{ width: `${morale || 70}%` }}></div>
+                  </div>
+                  <span className="text-xs font-bold text-white">{morale || 70}%</span>
                 </div>
-                <span className="text-xs font-bold text-white">{morale || 70}%</span>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3 bg-black/40 inline-flex px-4 py-2 rounded-xl border border-white/5">
+              <span className="text-xl">{chemistry >= 85 ? '🤝' : chemistry >= 60 ? '🤔' : chemistry >= 40 ? '⚠️' : '💣'}</span>
+              <div>
+                <div className="text-[10px] text-[#8892b0] uppercase tracking-widest font-bold">Takım Uyumu</div>
+                <div className="flex items-center gap-2">
+                  <div className="w-24 h-1.5 bg-black rounded-full overflow-hidden">
+                    <div className={`h-full ${chemistry >= 85 ? 'bg-[#00e676]' : chemistry >= 60 ? 'bg-[#00c8ff]' : chemistry >= 40 ? 'bg-[#f5c842]' : 'bg-[#ff1744]'}`} style={{ width: `${chemistry || 85}%` }}></div>
+                  </div>
+                  <span className="text-xs font-bold text-white">{chemistry || 85}%</span>
+                </div>
               </div>
             </div>
           </div>

@@ -86,7 +86,7 @@ export function SquadContainer() {
           <div className="w-[1px] h-10 bg-white/5"></div>
           <div className="text-center">
             <div className="text-[10px] text-[#4a5568] tracking-[2px] uppercase">Kadro</div>
-            <div className="font-orbitron font-bold text-2xl text-white">{squadPlayers.length}</div>
+            <div className="font-orbitron font-bold text-2xl text-white">{myPlayers.length}</div>
           </div>
         </div>
       </div>
