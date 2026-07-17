@@ -10,7 +10,7 @@ import { useState, useEffect } from 'react';
 
 export function Sidebar({ onClose }) {
   const pathname = usePathname();
-  const { myClubId, season, week, finances, morale } = useGameStore();
+  const { myClubId, season, week, finances, morale, setPlaying } = useGameStore();
   const [isCollapsed, setIsCollapsed] = useState(false);
 
   useEffect(() => {
@@ -156,10 +156,10 @@ export function Sidebar({ onClose }) {
         </div>
       </div>
       
-      {/* Bottom Quick Stats */}
-      {!isCollapsed && (
-        <div className="p-4 sm:p-5 border-t border-white/5 bg-black/20">
-          <div className="mb-3">
+      {/* Bottom Quick Stats & Actions */}
+      <div className="mt-auto border-t border-white/5 bg-black/20 p-4 sm:p-5">
+        {!isCollapsed && (
+          <div className="mb-4">
             <div className="flex justify-between text-[10px] sm:text-[11px] font-semibold text-[#8892b0] uppercase tracking-wider mb-1.5">
               <span>Takım Morali</span>
               <span className="text-white">{morale || 100}%</span>
@@ -176,20 +176,32 @@ export function Sidebar({ onClose }) {
                 }}
               />
             </div>
-          </div>
-          
-          <div className="grid grid-cols-2 gap-2 bg-[#141b2d] p-3 rounded-xl border border-white/5">
-            <div className="min-w-0">
-              <div className="text-[#00e676] font-orbitron font-bold text-xs truncate">{formatMoney(finances?.balance || 0)}</div>
-              <div className="text-[9px] sm:text-[10px] text-[#4a5568] uppercase tracking-wider mt-0.5">Bütçe</div>
+            
+            <div className="grid grid-cols-2 gap-2 bg-[#141b2d] p-3 rounded-xl border border-white/5 mt-3">
+              <div className="min-w-0">
+                <div className="text-[#00e676] font-orbitron font-bold text-xs truncate">{formatMoney(finances?.balance || 0)}</div>
+                <div className="text-[9px] sm:text-[10px] text-[#4a5568] uppercase tracking-wider mt-0.5">Bütçe</div>
+              </div>
+              <div className="min-w-0">
+                <div className="text-[#8892b0] font-orbitron font-bold text-xs truncate">{formatMoney(finances?.weeklyWages || 0)}</div>
+                <div className="text-[9px] sm:text-[10px] text-[#4a5568] uppercase tracking-wider mt-0.5">Maaş</div>
+              </div>
             </div>
-            <div className="min-w-0">
-              <div className="text-[#8892b0] font-orbitron font-bold text-xs truncate">{formatMoney(finances?.weeklyWages || 0)}</div>
-              <div className="text-[9px] sm:text-[10px] text-[#4a5568] uppercase tracking-wider mt-0.5">Maaş</div>
-            </div>
           </div>
-        </div>
-      )}
+        )}
+
+        <button 
+          onClick={() => {
+            setPlaying(false);
+            if (onClose) onClose();
+          }}
+          className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border border-red-500/20 bg-red-500/5 hover:bg-red-500/20 text-red-400 transition-all ${isCollapsed ? 'text-xl' : 'text-xs font-bold tracking-widest uppercase'}`}
+          title="Kariyer Değiştir / Çıkış Yap"
+        >
+          <span>🚪</span>
+          {!isCollapsed && <span>Kariyer Değiştir</span>}
+        </button>
+      </div>
     </div>
   );
 }
