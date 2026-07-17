@@ -73,29 +73,31 @@ Yukarıdaki analiz ışığında uygulanabilir adım adım planımız:
 - [ ] **Görev 12:** Kupa fikstürü turnuva ağacı oluşturma.
 - [ ] **Görev 13:** Groq API: Yapay Zeka Odaklı Transfer Görüşmeleri (AI Negotiations).
 - [ ] **Görev 14:** Groq API: Gerçekçi Oyuncu İsyanları ve Etkileşimleri (WhatsApp tarzı mesajlar).
-- [ ] **Görev 15:** Groq API: Dinamik Basın Toplantıları (Kararların morale etkisi).
-- [ ] **Görev 16:** Groq API: Yönetim (Board) Beklentileri ve Ultimatomlar.
+- [x] **Görev 15:** Groq API: Dinamik Basın Toplantıları (Kararların morale etkisi).
+- [x] **Görev 16:** Groq API: Yönetim (Board) Beklentileri ve Ultimatomlar. (Derbi Konuşmaları)
 - [ ] **Görev 17:** Sezon Sonu Geçişi (Şampiyonluk Kutlamaları, Küme Düşme ve Çıkma - Relegation/Promotion).
 - [ ] **Görev 18:** Ödüller ve Tarihçe (Gol Kralı, Yılın Futbolcusu, Geçmiş sezonların kaydedilmesi).
 - [x] **Görev 19:** Çoklu Kayıt Sistemi (Farklı Slotlarda Save/Load yapabilme menüsü).
 - [ ] **Görev 20:** Emeklilik ve Regen Sistemi (Eksilen oyuncuların yerine 16-17 yaşında yeni yeteneklerin veritabanına eklenmesi).
 - [ ] **Görev 21:** Menajer Yetenek Ağacı (Kazanılan XP'ler ile transfer, taktik vb. özellikler açma).
 - [ ] **Görev 22:** Dinamik Hava Durumu ve Zemin (Yağmurlu/Karlı havada maç motorundaki istatistiklerin değişmesi).
-- [ ] **Görev 23:** Oyuncu Karakteristikleri (PlayStyles / Traits) (Örn: Uzaktan şut atar, Agresif oynar).
+- [x] **Görev 23:** Oyuncu Karakteristikleri ve Yan Mevki Sistemi (2. ve 3. mevki cezaları, Taktik ekranı geliştirmeleri).
 - [ ] **Görev 24:** Milli Takımlar ve Uluslararası Turnuvalar (Menajere milli takım teklifleri gelmesi).
 - [ ] **Görev 25:** Küresel Liderlik Tablosu (Veritabanı üzerinden diğer gerçek oyuncularla XP / Başarı kıyaslaması).
 - [ ] **Görev 26:** Sosyal Medya Girişi (Google ve Facebook ile giriş / kayıt entegrasyonu).
 - [ ] **Görev 27:** Premium Maç Sonucu Paylaşım Şablonu (Kullanıcıların maç sonuçlarını estetik bir kart tasarımı ile Twitter/Instagram'da paylaşabilmesi).
 - [ ] **Görev 28:** FC2026 Tarzı Yıldız Oyuncu Animasyonu (Yüksek reytingli bir oyuncu transfer edildiğinde ekranda kart/yürüme tarzı havalı bir kutlama animasyonunun girmesi).
 - [ ] **Görev 29:** Dinamik Oyuncu Yüzleri (Avatarlar) (DiceBear API veya benzeri bir yöntemle her oyuncuya ID'sine/ismine özel, düşük boyutlu ve premium görünen rastgele bir yüz atanması).
-- [ ] **Görev 30:** Gerçek Takım/Oyuncu Veritabanı ve Cron Mimarisi (API-Football vb. bir API'den saat başı 10 takım ve oyuncularının çekilerek Vercel Cron Jobs ile Prisma veritabanına kaydedilmesi. Günlük 100 API istek limitini aşmamak için "Kuyruk (Queue)" mantığı kullanılması).
-- [ ] **Görev 31:** Groq API: Menajer Özel Hayatı ve Skandallar (RPG Sistemi). Menajerin kişisel maaşıyla lüks tüketim (yat, kat, araba) yapabilmesi, kumar/gece hayatı gibi aksiyonlara girmesi ve Groq yapay zekasının bu eylemlere göre asılsız veya gerçek skandal haberleri, rüşvet / hapis gibi sonuçlar üretip takım moralini etkilemesi.
-- [x] **Görev 32:** Gelişmiş Gelen Kutusu (Inbox) Tasarımı ve Kategorizasyonu. Sadece genel haberlerin aktığı bir ekran yerine; "Transfer Teklifleri", "Sağlık Ekibi Raporları (Sakatlık/İyileşme)", "Yönetim (Board) Kararları" ve "Kişisel Özel Hayat Mesajları" şeklinde kategorilere ayrılmış profesyonel bir e-posta / mesajlaşma arayüzü.
-- [x] **Görev 33:** Performans Optimizasyonu (IndexedDB Geçişi). Zustand `localStorage` üzerinde çalışıyor, veri (oyuncu/haber sayısı) çok büyüdüğünde tarayıcıyı dondurmaması için kayıt sisteminin asenkron `IndexedDB` altyapısına geçirilmesi.
-- [x] **Görev 34:** Framer Motion ile Pürüzsüz Sayfa Geçişleri (Page Transitions). Menüler arası (Kadro, Taktik, Transfer) geçiş yaparken ekranın küt diye değişmesi yerine sağdan kayarak/yumuşakça gelmesi (`AnimatePresence` entegrasyonu).
-- [x] **Görev 35:** Maç Motoru Hızlandırma Seçenekleri (2x, 4x, Anında Bitir). Oyuncunun 2D maç ekranını beklemek istemediği durumlar için simülasyon hızını artırma veya maçı direkt sonuçlandırma (Simulate to End) butonu.
-- [ ] **Görev 36:** Premium Arayüz Sesleri (UI Sound Design). Sadece maç içinde değil, menüde butonlara tıklarken, transfer kabul edildiğinde veya paket (oyuncu) açarken hafif ve tatmin edici ses efektlerinin çalması.
-- [x] **Görev 38:** İnteraktif Gelen Kutusu (Seçim Tabanlı Gelen Mailler). Rakip takım ajanları, şaibeli sponsorlar ve medyadan gelen karara dayalı (Evet/Hayır/Reddet) mailler.
-- [x] **Görev 39:** Menajer İtibarı (Reputation) ve Popülarite Sistemi. Kullanıcının Gelen Kutusunda verdiği kararların ve maç sonuçlarının birleşerek itibar puanını etkilemesi (Etkiler: Transfer başarısı, yönetim güveni).
-- [x] **Görev 40:** Groq API: Dinamik Kulüp Olayları ve RPG Derinliği. Oyuncu kaprisleri (Örn: Gece kulübü baskını), kulüp başkanının torpil istekleri ve menajer (temsilci) oyunlarının yapay zeka tarafından haber/skandal olarak yaratılması.
-- [ ] **Görev 41:** Bulut Kayıt (Cloud Save) Sistemi: Yerel IndexedDB veritabanı yerine, hesapların ve kariyer slotlarının PostgreSQL, Supabase veya Firebase gibi gerçek bir Backend DB'ye taşınması (Çapraz Cihaz Desteği için).
+- [ ] **Görev 30:** Gerçek Takım/Oyuncu Veritabanı ve Cron Mimarisi.
+- [ ] **Görev 31:** Groq API: Menajer Özel Hayatı ve Skandallar (RPG Sistemi).
+- [x] **Görev 32:** Gelişmiş Gelen Kutusu (Inbox) Tasarımı ve Kategorizasyonu.
+- [x] **Görev 33:** Performans Optimizasyonu (IndexedDB Geçişi).
+- [x] **Görev 34:** Framer Motion ile Pürüzsüz Sayfa Geçişleri (Page Transitions).
+- [x] **Görev 35:** Maç Motoru Hızlandırma Seçenekleri (2x, 4x, Anında Bitir).
+- [ ] **Görev 36:** Premium Arayüz Sesleri (UI Sound Design).
+- [x] **Görev 38:** İnteraktif Gelen Kutusu (Seçim Tabanlı Gelen Mailler).
+- [x] **Görev 39:** Menajer İtibarı (Reputation) ve Popülarite Sistemi.
+- [x] **Görev 40:** Groq API: Dinamik Kulüp Olayları ve RPG Derinliği.
+- [ ] **Görev 41:** Bulut Kayıt (Cloud Save) Sistemi.
+- [x] **Görev 42:** Önemli maçlarda prim sistemi, kulüp başkanı konuşmaları ve maç sonu röportajları.
+- [x] **Görev 43:** Groq API: Tüm yapay zeka istemlerine (prompt) Türkçe dışındaki dillerin kullanımının kesin olarak yasaklanması.

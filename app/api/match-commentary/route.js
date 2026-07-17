@@ -23,7 +23,7 @@ export async function POST(req) {
       Sen efsanevi, heyecanlı ve tarafsız bir futbol spikerisin (Ercan Taner veya Ertem Şener tarzı, ama profesyonel).
       Bugün ${homeClub.name} (Ev Sahibi) ile ${awayClub.name} (Deplasman) arasında bir maç oynanacak.
       Ev sahibi takımın taktiği: ${homeTactics?.style === 'attacking' ? 'Hücumcu' : homeTactics?.style === 'defensive' ? 'Defansif' : 'Dengeli'} ve ${homeTactics?.tempo === 'fast' ? 'Hızlı' : 'Yavaş'} tempoda.
-      ÖNEMLİ: KESİNLİKLE VE SADECE TÜRKÇE YAZACAKSIN. İNGİLİZCE KULLANMAK YASAKTIR.
+      ÖNEMLİ: KESİNLİKLE VE SADECE TÜRKÇE YAZACAKSIN. İNGİLİZCE VEYA DİĞER HİÇBİR YABANCI DİLİ KULLANMAK KESİNLİKLE YASAKTIR. SADECE TÜRKÇE.
       
       Görevlerin:
       1. Maç başlamadan hemen önce okunacak 2 cümlelik çok heyecanlı bir "preview" (maç önü anonsu) yaz.
@@ -61,7 +61,7 @@ export async function POST(req) {
       1. Çarpıcı bir manşet (headline)
       2. 3-4 cümlelik destansı bir maç özeti / eleştirisi (report) yaz.
       
-      ÖNEMLİ KURAL: YANITIN KESİNLİKLE TÜRKÇE OLMALIDIR. İNGİLİZCE KELİMELER KULLANMA.
+      ÖNEMLİ KURAL: YANITIN KESİNLİKLE TÜRKÇE OLMALIDIR. İNGİLİZCE VEYA DİĞER HİÇBİR YABANCI DİLİ KULLANMA. SADECE TÜRKÇE.
 
       SADECE VE SADECE JSON formatında dön:
       {
@@ -74,6 +74,68 @@ export async function POST(req) {
         messages: [{ role: "user", content: prompt }],
         model: "llama-3.3-70b-versatile",
         temperature: 0.7,
+        response_format: { type: "json_object" }
+      });
+
+      const result = JSON.parse(completion.choices[0]?.message?.content || "{}");
+      return NextResponse.json(result);
+    }
+    else if (type === 'prematch_speech') {
+      const prompt = `
+      Sen tutkulu, hırslı ve biraz da iddialı bir Futbol Kulübü Başkanısın.
+      Takımın (${homeClub.name}), az sonra ${awayClub.name} ile çok kritik bir maça çıkacak.
+      
+      Görevlerin:
+      1. Menajere (oyuncuya) yönelik, maçı kazanmanın ne kadar önemli olduğunu anlatan 2-3 cümlelik çok motive edici, derbi atmosferine uygun bir konuşma metni yaz.
+      2. Bu maç için takıma dağıtılacak prim miktarını belirle (500000 ile 3000000 arasında, Euro cinsinden bir sayı).
+
+      ÖNEMLİ KURAL: KESİNLİKLE VE SADECE TÜRKÇE YAZACAKSIN. İNGİLİZCE VEYA DİĞER HİÇBİR YABANCI DİLİ KULLANMAK KESİNLİKLE YASAKTIR. SADECE TÜRKÇE.
+
+      SADECE VE SADECE JSON formatında dön:
+      {
+        "speech": "Konuşma metni",
+        "bonusAmount": 1500000
+      }
+      `;
+
+      const completion = await groq.chat.completions.create({
+        messages: [{ role: "user", content: prompt }],
+        model: "llama-3.3-70b-versatile",
+        temperature: 0.8,
+        response_format: { type: "json_object" }
+      });
+
+      const result = JSON.parse(completion.choices[0]?.message?.content || "{}");
+      return NextResponse.json(result);
+    }
+    else if (type === 'postmatch_interview') {
+      const prompt = `
+      Sen araştırmacı ve zaman zaman kışkırtıcı bir spor gazetecisisin. Maç az önce bitti.
+      Sonuç: ${homeClub.name} ${score?.home || 0} - ${score?.away || 0} ${awayClub.name}.
+      
+      Sen menajere maçın sonucuyla ilgili 1 adet spesifik (sonuca göre tebrik eden veya hesap soran) soru soracaksın. 
+      Ayrıca bu soruya menajerin verebileceği 3 adet cevap şıkkı oluşturacaksın:
+      - positive: Takımı öven, destekleyici ve iyimser cevap.
+      - negative: Agresif, oyuncuları veya hakemi sert eleştiren, sinirli cevap.
+      - neutral: Politik, yuvarlak, kaçamak cevap.
+      
+      ÖNEMLİ KURAL: KESİNLİKLE VE SADECE TÜRKÇE YAZACAKSIN. İNGİLİZCE VEYA DİĞER HİÇBİR YABANCI DİLİ KULLANMAK KESİNLİKLE YASAKTIR. SADECE TÜRKÇE.
+      
+      SADECE VE SADECE JSON formatında dön:
+      {
+        "question": "Gazetecinin sorduğu 1-2 cümlelik soru",
+        "options": [
+          { "text": "Pozitif cevap", "type": "positive" },
+          { "text": "Negatif cevap", "type": "negative" },
+          { "text": "Nötr cevap", "type": "neutral" }
+        ]
+      }
+      `;
+
+      const completion = await groq.chat.completions.create({
+        messages: [{ role: "user", content: prompt }],
+        model: "llama-3.3-70b-versatile",
+        temperature: 0.8,
         response_format: { type: "json_object" }
       });
 

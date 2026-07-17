@@ -38,6 +38,16 @@ export function MatchContainer() {
   const [isMatchPaused, setIsMatchPaused] = useState(false);
   const [isUserPaused, setIsUserPaused] = useState(false);
 
+  const [showPreMatchEvent, setShowPreMatchEvent] = useState(false);
+  const [preMatchBoostApplied, setPreMatchBoostApplied] = useState(false);
+  const [showInterview, setShowInterview] = useState(false);
+  const [interviewAnswered, setInterviewAnswered] = useState(false);
+  
+  const [preMatchAiData, setPreMatchAiData] = useState(null);
+  const [isPreMatchAiLoading, setIsPreMatchAiLoading] = useState(false);
+  const [postMatchAiData, setPostMatchAiData] = useState(null);
+  const [isPostMatchAiLoading, setIsPostMatchAiLoading] = useState(false);
+
   useEffect(() => {
     setMounted(true);
     if (mounted && !myClubId) {
@@ -106,18 +116,97 @@ export function MatchContainer() {
     );
   }
 
-  const isHome = fixture.homeClubId === myClubId;
+  const isHome = fixture?.homeClubId === myClubId;
   const oppClubId = isHome ? fixture.awayClubId : fixture.homeClubId;
   const oppClub = ChampionMasterData.clubs.find(c => c.id === oppClubId);
   const myClub = ChampionMasterData.clubs.find(c => c.id === myClubId);
-
   const homeTeam = isHome ? myClub : oppClub;
   const awayTeam = isHome ? oppClub : myClub;
 
+  const getPosLabel = (pos) => pos;
+
+  useEffect(() => {
+    if (oppClub && oppClub.prestige >= 7 && !showPreMatchEvent && minute === 0 && !engine) {
+      const fetchPreMatchSpeech = async () => {
+        setIsPreMatchAiLoading(true);
+        setShowPreMatchEvent(true);
+        try {
+          const res = await fetch('/api/match-commentary', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ type: 'prematch_speech', homeClub: homeTeam, awayClub: awayTeam })
+          });
+          const data = await res.json();
+          setPreMatchAiData(data);
+        } catch (e) {
+          console.error("AI PreMatch Speech Error:", e);
+        } finally {
+          setIsPreMatchAiLoading(false);
+        }
+      };
+      fetchPreMatchSpeech();
+    }
+  }, [oppClub]);
+
+  const handlePreMatchBoost = () => {
+    const bonus = preMatchAiData?.bonusAmount || 1000000;
+    const { addIncome } = useGameStore.getState();
+    addIncome(-bonus); 
+    setPreMatchBoostApplied(true);
+    setShowPreMatchEvent(false);
+  };
+
+  const handlePostMatchContinue = async () => {
+    if (!interviewAnswered && Math.random() > 0.3) { // %70 ihtimalle basın toplantısı
+      setIsPostMatchAiLoading(true);
+      setShowInterview(true);
+      try {
+        const res = await fetch('/api/match-commentary', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ type: 'postmatch_interview', homeClub: homeTeam, awayClub: awayTeam, score })
+        });
+        const data = await res.json();
+        setPostMatchAiData(data);
+      } catch (e) {
+        console.error("AI PostMatch Interview Error:", e);
+      } finally {
+        setIsPostMatchAiLoading(false);
+      }
+    } else {
+      router.push("/");
+    }
+  };
+
+  const answerInterview = (positive) => {
+    if (positive !== null) {
+      useGameStore.setState(state => {
+        const currentRep = state.manager?.reputation || 50;
+        const newRep = Math.min(100, Math.max(0, currentRep + (positive ? 2 : -2)));
+        return { manager: { ...state.manager, reputation: newRep } };
+      });
+    }
+    setInterviewAnswered(true);
+    setShowInterview(false);
+    router.push("/");
+  };
+
+  const skipPreMatch = () => {
+    setShowPreMatchEvent(false);
+  };
+
   const startMatch = () => {
-    // Maç başlama sesi
+    if (isAiLoading || !fixture || !myClub || !oppClub) return;
     const audio = getAudioEngine();
     if (audio) audio.playStartWhistle();
+
+    const myTactics = { ...(useGameStore.getState().tactics || { style: 'balanced', press: 'medium', tempo: 'normal' }) };
+    if (preMatchBoostApplied) {
+      myTactics.preMatchBoost = true;
+    }
+
+    const homeTactics = isHome ? myTactics : { style: 'balanced', press: 'medium', tempo: 'normal' };
+    const awayTactics = isHome ? { style: 'balanced', press: 'medium', tempo: 'normal' } : myTactics;
 
     const state = useGameStore.getState();
     const oppSquad = ChampionMasterData.players.filter(p => p.clubId === oppClubId).map(p => ({
@@ -449,10 +538,72 @@ export function MatchContainer() {
             </button>
             <button 
               className="px-8 py-3 rounded-xl bg-gradient-to-r from-[#00c8ff] to-[#0090b8] text-white font-bold tracking-widest uppercase shadow-[0_0_20px_rgba(0,200,255,0.3)] hover:scale-105 transition-transform"
-              onClick={() => router.push("/")}
+              onClick={handlePostMatchContinue}
             >
               Devam Et ➔
             </button>
+          </div>
+        </div>
+      </motion.div>
+    );
+  }
+
+  if (showInterview) {
+    const isWin = score.home > score.away && isHome || score.away > score.home && !isHome;
+    const isDraw = score.home === score.away;
+    return (
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="absolute inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+        <div className="bg-[#141b2d] border border-[#00c8ff]/30 w-full max-w-2xl rounded-3xl shadow-[0_0_50px_rgba(0,200,255,0.15)] overflow-hidden">
+          <div className="bg-gradient-to-r from-[#00c8ff]/20 to-transparent p-6 border-b border-white/5 text-center">
+            <h2 className="text-2xl font-orbitron font-bold text-white mb-2">🎤 Maç Sonu Basın Toplantısı</h2>
+            <p className="text-[#8892b0] text-sm">Medya mensupları maçın gidişatı hakkında sorular soruyor...</p>
+          </div>
+          <div className="p-8 text-center space-y-6">
+            {isPostMatchAiLoading ? (
+              <div className="py-12 text-white animate-pulse">Gazeteciler toplanıyor, soru hazırlanıyor...</div>
+            ) : (
+              <>
+                <div className="bg-black/30 p-6 rounded-2xl border border-white/5">
+                  <p className="text-lg text-white font-rajdhani">
+                    "{postMatchAiData?.question || (isWin ? 'Sayın Menajer, harika bir galibiyet aldınız! Takımınızın bugünkü performansı hakkında ne düşünüyorsunuz?' : isDraw ? 'Beklenmedik bir beraberlik oldu. Sahada eksik olan şey neydi?' : 'Taraftar bu mağlubiyetten dolayı oldukça öfkeli. Sorumluluğu üzerinize alıyor musunuz?')}"
+                  </p>
+                </div>
+                <div className="grid grid-cols-1 gap-3">
+                  {postMatchAiData?.options ? postMatchAiData.options.map((opt, i) => (
+                    <button 
+                      key={i}
+                      onClick={() => answerInterview(opt.type === 'positive' ? true : opt.type === 'negative' ? false : null)}
+                      className={`px-6 py-4 bg-white/5 hover:bg-white/10 text-white font-bold rounded-xl transition-colors border text-left flex items-center gap-3 ${
+                        opt.type === 'positive' ? 'border-[#00e676]/30' : opt.type === 'negative' ? 'border-[#ff1744]/30' : 'border-white/10 text-[#8892b0]'
+                      }`}
+                    >
+                      <span className="text-xl">{opt.type === 'positive' ? '✅' : opt.type === 'negative' ? '🔥' : '🤐'}</span> {opt.text}
+                    </button>
+                  )) : (
+                    <>
+                      <button 
+                        onClick={() => answerInterview(true)}
+                        className="px-6 py-4 bg-white/5 hover:bg-white/10 text-white font-bold rounded-xl transition-colors border border-[#00e676]/30 text-left flex items-center gap-3"
+                      >
+                        <span className="text-xl">✅</span> Takımı öv ve destekle (Moral +)
+                      </button>
+                      <button 
+                        onClick={() => answerInterview(false)}
+                        className="px-6 py-4 bg-white/5 hover:bg-white/10 text-white font-bold rounded-xl transition-colors border border-[#ff1744]/30 text-left flex items-center gap-3"
+                      >
+                        <span className="text-xl">🔥</span> Takımı sert eleştir veya hakeme yüklen (Riskli)
+                      </button>
+                      <button 
+                        onClick={() => answerInterview(null)}
+                        className="px-6 py-4 bg-white/5 hover:bg-white/10 text-[#8892b0] font-bold rounded-xl transition-colors border border-white/10 text-left flex items-center gap-3"
+                      >
+                        <span className="text-xl">🤐</span> Yorum Yok (Nötr)
+                      </button>
+                    </>
+                  )}
+                </div>
+              </>
+            )}
           </div>
         </div>
       </motion.div>
@@ -501,8 +652,8 @@ export function MatchContainer() {
           </div>
         </div>
 
-        <div className="mt-6 flex justify-center gap-4">
-          {!engine && (
+        <div className="mt-6 flex justify-center gap-4 w-full">
+          {!engine && !showPreMatchEvent && (
             <button 
               disabled={isAiLoading}
               className={`px-8 py-3 rounded-xl font-bold tracking-widest uppercase flex items-center gap-2 transition-transform ${isAiLoading ? 'bg-gray-600 text-gray-400 cursor-not-allowed' : 'bg-gradient-to-r from-[#00e676] to-[#00b25c] text-white shadow-[0_0_20px_rgba(0,230,118,0.3)] hover:scale-105'}`}
@@ -511,6 +662,28 @@ export function MatchContainer() {
               {isAiLoading ? 'Spiker Bağlantısı Kuruluyor...' : '▶️ Maça Başla'}
             </button>
           )}
+          
+          {!engine && showPreMatchEvent && (
+            <div className="bg-[#141b2d] p-6 rounded-2xl border border-yellow-500/50 shadow-[0_0_30px_rgba(234,179,8,0.2)] text-center w-full max-w-2xl mx-auto animate-pulse-slow">
+              <h3 className="text-xl font-orbitron font-bold text-yellow-500 mb-2">📢 Başkanın Mesajı</h3>
+              {isPreMatchAiLoading ? (
+                <p className="text-white text-sm mb-4">Başkan arıyor, bekleniyor...</p>
+              ) : (
+                <>
+                  <p className="text-white text-sm mb-4">"{preMatchAiData?.speech || 'Bugün bizim için çok kritik bir maç, adeta bir derbi! Sahaya çıkıp onlara kim olduğumuzu gösterin. Gerekirse çocuklara galibiyet primi dağıt, ama bu maçı al!'}"</p>
+                  <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                    <button onClick={handlePreMatchBoost} className="px-6 py-2.5 bg-gradient-to-r from-yellow-400 to-yellow-600 hover:scale-105 text-black font-bold rounded-xl transition-transform shadow-[0_0_15px_rgba(234,179,8,0.4)]">
+                      💰 {preMatchAiData?.bonusAmount ? preMatchAiData.bonusAmount.toLocaleString('tr-TR') : '1.000.000'} € Prim Dağıt
+                    </button>
+                    <button onClick={skipPreMatch} className="px-6 py-2.5 bg-white/5 hover:bg-white/10 text-white font-bold rounded-xl transition-colors border border-white/10">
+                      Normal Çık (Geç)
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+
           {engine && (
             <>
               <button 
