@@ -11,7 +11,7 @@ import { motion, AnimatePresence } from "framer-motion";
 
 export function MatchContainer() {
   const router = useRouter();
-  const { myClubId, week, fixtures, squad, lineup } = useGameStore();
+  const { myClubId, week, fixtures, squad, lineup, tactics } = useGameStore();
   const [mounted, setMounted] = useState(false);
   const [engine, setEngine] = useState(null);
   const [events, setEvents] = useState([]);
@@ -34,13 +34,13 @@ export function MatchContainer() {
   const [subsLeft, setSubsLeft] = useState(5);
   const [selectedSubOut, setSelectedSubOut] = useState(null);
   const [selectedSubIn, setSelectedSubIn] = useState(null);
-  const [currentTactics, setCurrentTactics] = useState({ style: 'balanced', press: 'medium', tempo: 'normal' });
+  const [currentTactics, setCurrentTactics] = useState(tactics || { style: 'balanced', press: 'medium', tempo: 'normal' });
   const [isMatchPaused, setIsMatchPaused] = useState(false);
   const [isUserPaused, setIsUserPaused] = useState(false);
 
   useEffect(() => {
     setMounted(true);
-    if (!myClubId) {
+    if (mounted && !myClubId) {
       router.push("/");
     } else {
       setTimeout(() => {
@@ -88,7 +88,7 @@ export function MatchContainer() {
     fetchAiPrematch();
   }, [mounted, fixture, engine, isFinished, aiData, isAiLoading, myClubId]);
 
-  if (!mounted || !myClubId) return null;
+  if (!mounted || !myClubId) return <div className="min-h-screen w-full"></div>;
   
   if (!fixture || (fixture.played && !isFinished)) {
     return (
@@ -686,7 +686,14 @@ export function MatchContainer() {
                           onClick={() => setSelectedSubOut(isSelected ? null : pid)}
                           className={`flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all border ${isSelected ? 'bg-red-500/20 border-red-500/50 shadow-[0_0_15px_rgba(239,68,68,0.2)]' : 'bg-white/5 border-transparent hover:bg-white/10'}`}
                         >
-                          <div className="font-orbitron font-bold text-xs sm:text-sm w-6 text-center text-[#8892b0]">{p.position}</div>
+                          <div className="flex flex-col justify-center items-center w-10 sm:w-14">
+                            <div className="font-orbitron font-bold text-xs sm:text-sm text-[#8892b0]">{p.position}</div>
+                            {p.alternatePositions && p.alternatePositions.length > 0 && (
+                              <div className="text-[7px] sm:text-[8px] text-[#4a5568] uppercase tracking-tighter truncate w-full text-center mt-0.5">
+                                {p.alternatePositions.join(',')}
+                              </div>
+                            )}
+                          </div>
                           <div className="flex-1 font-rajdhani font-bold text-sm sm:text-base text-white truncate">
                             {p.firstName} {p.lastName}
                           </div>
@@ -733,7 +740,14 @@ export function MatchContainer() {
                             onClick={() => setSelectedSubIn(isSelected ? null : pid)}
                             className={`flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all border ${isSelected ? 'bg-[#00e676]/20 border-[#00e676]/50 shadow-[0_0_15px_rgba(0,230,118,0.2)]' : 'bg-white/5 border-transparent hover:bg-white/10'}`}
                           >
-                            <div className="font-orbitron font-bold text-xs sm:text-sm w-6 text-center text-[#8892b0]">{p.position}</div>
+                            <div className="flex flex-col justify-center items-center w-10 sm:w-14">
+                              <div className="font-orbitron font-bold text-xs sm:text-sm text-[#8892b0]">{p.position}</div>
+                              {p.alternatePositions && p.alternatePositions.length > 0 && (
+                                <div className="text-[7px] sm:text-[8px] text-[#4a5568] uppercase tracking-tighter truncate w-full text-center mt-0.5">
+                                  {p.alternatePositions.join(',')}
+                                </div>
+                              )}
+                            </div>
                             <div className="flex-1 font-rajdhani font-bold text-sm sm:text-base text-white truncate">
                               {p.firstName} {p.lastName}
                             </div>
@@ -781,9 +795,12 @@ export function MatchContainer() {
                       onChange={e => setCurrentTactics({...currentTactics, style: e.target.value})}
                       className="bg-[#0f1629] text-white border border-white/10 rounded-xl p-3 text-sm font-rajdhani outline-none focus:border-[#00c8ff] transition-colors"
                     >
-                      <option value="attacking">Taktik: Hücum</option>
-                      <option value="balanced">Taktik: Dengeli</option>
-                      <option value="defensive">Taktik: Defans</option>
+                      <option value="balanced">Dengeli</option>
+                      <option value="counter">Kontra Atak</option>
+                      <option value="park">Kapalı Savunma</option>
+                      <option value="press">Önde Baskı</option>
+                      <option value="possession">Topa Sahip Olma</option>
+                      <option value="longball">Uzun Top</option>
                     </select>
                     <select 
                       value={currentTactics.press} 

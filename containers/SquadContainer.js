@@ -1,14 +1,14 @@
 "use client";
 
 import { useGameStore } from "@/store/gameStore";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import ChampionMasterData from "@/lib/game/data";
 import { formatMoney } from "@/lib/game/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { GameEngine } from "@/lib/game/engine";
 
 export function SquadContainer() {
-  const { squad, lineup, setLineup, myClubId, formation, setCustomPositions, squadFitness, injured, suspensions, playerStats, season } = useGameStore();
+  const { squad, lineup, setLineup, myClubId, formation, setCustomPositions, squadFitness, injured, suspensions, playerStats, season, tactics } = useGameStore();
   const [filter, setFilter] = useState("all");
 
   const myPlayers = ChampionMasterData.players
@@ -48,7 +48,9 @@ export function SquadContainer() {
 
   const autoFillLineup = () => {
     const clubPlayers = ChampionMasterData.players.filter(p => squad.includes(p.id));
-    const newLineup = GameEngine.autoSelectLineup(clubPlayers, formation || '4-3-3');
+    const unavailableIds = [...injured, ...suspensions];
+    const style = tactics?.style || 'balanced';
+    const newLineup = GameEngine.autoSelectLineup(clubPlayers, formation || '4-3-3', unavailableIds, style);
     setLineup(newLineup);
     setCustomPositions({});
   };
@@ -148,8 +150,19 @@ export function SquadContainer() {
                   <div className={`font-orbitron font-black text-3xl ${getRatingColor(p.overall)}`}>
                     {p.overall}
                   </div>
-                  <div className="font-bold text-xs bg-black/40 text-white border border-white/10 px-2 py-1 rounded">
-                    {p.position}
+                  <div className="flex flex-col items-end gap-1">
+                    <div className="font-bold text-xs bg-black/40 text-white border border-white/10 px-2 py-1 rounded shadow-sm">
+                      {p.position}
+                    </div>
+                    {p.alternatePositions && p.alternatePositions.length > 0 && (
+                      <div className="flex gap-1">
+                        {p.alternatePositions.map((alt, i) => (
+                          <div key={i} className="text-[9px] bg-white/5 border border-white/10 text-[#8892b0] px-1.5 py-0.5 rounded shadow-sm">
+                            {alt}
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
 

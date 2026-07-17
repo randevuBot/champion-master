@@ -21,16 +21,26 @@ const getDynamicBand = (y) => {
   return 'ATT';
 };
 
-const isPlayerOutPosition = (player, y) => {
-  if (!player) return false;
+const getPositionPenalty = (player, y) => {
+  if (!player) return 0;
   const currentBand = getDynamicBand(y);
-  const naturalBand = getBand(player.position);
-  return currentBand !== naturalBand;
+  
+  // 1. Ana mevkisine uygun mu?
+  if (getBand(player.position) === currentBand) return 0;
+  
+  // 2. İkinci veya üçüncü mevkisine uygun mu?
+  if (player.alternatePositions && player.alternatePositions.length > 0) {
+    const hasAltBandMatch = player.alternatePositions.some(altPos => getBand(altPos) === currentBand);
+    if (hasAltBandMatch) return 3; // Yan mevkisinde oynuyorsa çok az düşüş (-3)
+  }
+  
+  // Hiçbir mevkisine uymuyor
+  return 15; // Tamamen yabancı bölge (-15)
 };
 
 export function TacticsContainer() {
   const router = useRouter();
-  const { myClubId, squad, lineup, setLineup, formation, setFormation, customPositions, setCustomPositions } = useGameStore();
+  const { myClubId, squad, lineup, setLineup, formation, setFormation, customPositions, setCustomPositions, tactics, setTactics } = useGameStore();
   const [mounted, setMounted] = useState(false);
   const [selectedSlotIndex, setSelectedSlotIndex] = useState(null);
   const [selectedReserveId, setSelectedReserveId] = useState(null);
@@ -40,10 +50,10 @@ export function TacticsContainer() {
 
   useEffect(() => {
     setMounted(true);
-    if (!myClubId) router.push("/");
-  }, [myClubId, router]);
+    if (mounted && !myClubId) router.push("/");
+  }, [myClubId, router, mounted]);
 
-  if (!mounted || !myClubId) return null;
+  if (!mounted || !myClubId) return <div className="min-h-screen w-full"></div>;
 
   const clubPlayers = ChampionMasterData.players.filter(p => squad.includes(p.id));
   const slots = GameEngine.getFormationSlots(formation);
@@ -76,6 +86,62 @@ export function TacticsContainer() {
     return defaultCoords[idx] || { x: 50, y: 50 }; // Fallback
   };
 
+  const handleTacticChange = (style) => {
+    setTactics({ style });
+    
+    // Apply tactical shifts to positions
+    const newPositions = {};
+    const safeCustomPositions = customPositions || {};
+    
+    slots.forEach((s, idx) => {
+      const playerId = currentLineup[idx];
+      if (!playerId) return;
+      
+      let basePos = defaultCoords[idx];
+      
+      // If they had a custom position, use it as base for X, but we'll recalculate Y based on tactic
+      if (safeCustomPositions[playerId]) {
+        basePos = { ...safeCustomPositions[playerId] };
+      } else {
+        basePos = { ...defaultCoords[idx] };
+      }
+      
+      const band = getBand(s);
+      
+      if (style === 'park') {
+        // Kapalı Savunma: Herkes geriye çekilir
+        if (band === 'DEF') basePos.y = Math.min(95, basePos.y + 10);
+        if (band === 'MID') basePos.y = Math.min(80, basePos.y + 15);
+        if (band === 'ATT') basePos.y = Math.min(60, basePos.y + 20);
+      } else if (style === 'counter') {
+        // Kontra Atak: Savunma geride, forvetler ileride
+        if (band === 'DEF') basePos.y = Math.min(90, basePos.y + 5);
+        if (band === 'MID') basePos.y = Math.min(70, basePos.y + 5);
+        if (band === 'ATT') basePos.y = Math.max(10, basePos.y - 15);
+      } else if (style === 'press') {
+        // Önde Baskı: Herkes ileri çıkar
+        if (band === 'DEF') basePos.y = Math.max(45, basePos.y - 15);
+        if (band === 'MID') basePos.y = Math.max(25, basePos.y - 15);
+        if (band === 'ATT') basePos.y = Math.max(5, basePos.y - 10);
+      } else if (style === 'possession') {
+        // Topa Sahip Olma: Takım boyu kısalır
+        if (band === 'DEF') basePos.y = Math.max(60, basePos.y - 10);
+        if (band === 'ATT') basePos.y = Math.min(30, basePos.y + 5);
+      } else if (style === 'longball') {
+        // Uzun Top: Forvetler ileride, defans geride
+        if (band === 'DEF') basePos.y = Math.min(90, basePos.y + 5);
+        if (band === 'ATT') basePos.y = Math.max(5, basePos.y - 10);
+      } else {
+        // Dengeli: Orijinal dizilim Y koordinatlarına dön
+        basePos.y = defaultCoords[idx].y;
+      }
+      
+      newPositions[playerId] = basePos;
+    });
+    
+    setCustomPositions(newPositions);
+  };
+
   // Live Team Strength Calculation
   const calculateStrength = () => {
     let total = 0;
@@ -85,7 +151,7 @@ export function TacticsContainer() {
       if (p) {
         const pos = getPlayerPosition(pId, idx);
         let val = p.overall;
-        if (isPlayerOutPosition(p, pos.y)) val -= 15;
+        val -= getPositionPenalty(p, pos.y);
         total += val;
         count++;
       }
@@ -194,7 +260,8 @@ export function TacticsContainer() {
   };
 
   const autoFillLineup = () => {
-    const newLineup = GameEngine.autoSelectLineup(clubPlayers, formation);
+    const style = tactics?.style || 'balanced';
+    const newLineup = GameEngine.autoSelectLineup(clubPlayers, formation, [], style);
     setLineup(newLineup);
     setCustomPositions({});
     setSelectedSlotIndex(null);
@@ -271,6 +338,19 @@ export function TacticsContainer() {
               <option value="3-4-3">3-4-3 (Ultra Ofansif)</option>
             </select>
             
+            <select 
+              className="bg-[#0a0e1a] border border-white/10 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-[#7c3aed] font-bold tracking-wide cursor-pointer w-full sm:w-auto"
+              value={tactics?.style || 'balanced'}
+              onChange={(e) => handleTacticChange(e.target.value)}
+            >
+              <option value="balanced">Dengeli</option>
+              <option value="counter">Kontra Atak</option>
+              <option value="park">Kapalı Savunma</option>
+              <option value="press">Önde Baskı</option>
+              <option value="possession">Topa Sahip Olma</option>
+              <option value="longball">Uzun Top</option>
+            </select>
+            
             <div className="flex gap-2 w-full sm:w-auto">
               <button 
                 onClick={handleAskAI}
@@ -313,8 +393,9 @@ export function TacticsContainer() {
               const player = clubPlayers.find(p => p.id === playerId);
               const pos = getPlayerPosition(playerId, idx);
               const isSelected = selectedSlotIndex === idx;
-              const outOfPos = isPlayerOutPosition(player, pos.y);
-
+              const penalty = getPositionPenalty(player, pos.y);
+              const isWrongPos = penalty === 15;
+              const isAltPos = penalty > 0 && penalty < 15;
               // Critical Fix: Bind key to coordinate so Framer Motion forgets drag transforms
               const uniqueKey = playerId ? `player-${playerId}-${pos.x}-${pos.y}` : `empty-${idx}`;
 
@@ -337,7 +418,7 @@ export function TacticsContainer() {
                   >
                     <div className={`w-10 h-10 md:w-12 md:h-12 bg-[#141b2d] rounded-full flex items-center justify-center font-orbitron font-bold transition-all shadow-[0_4px_15px_rgba(0,0,0,0.5)] z-10
                       ${isSelected ? 'ring-4 ring-[#f5c842] scale-110 shadow-[0_0_20px_rgba(245,200,66,0.6)]' : 'border border-[#00c8ff]/50 hover:scale-110 hover:border-[#00c8ff]'}
-                      ${outOfPos ? 'bg-[#ff1744]/20 border-[#ff1744]' : ''}
+                      ${isWrongPos ? 'bg-[#ff1744]/20 border-[#ff1744]' : isAltPos ? 'bg-yellow-500/20 border-yellow-500' : ''}
                     `}>
                       {player ? (
                         <span className={getRatingColor(player.overall)}>{player.overall}</span>
@@ -345,11 +426,12 @@ export function TacticsContainer() {
                         <span className="text-white/20 text-xs">{slots[idx]}</span>
                       )}
                     </div>
-                    
-                    {outOfPos && (
+                    {isWrongPos && (
                       <div className="absolute -top-2 -right-2 bg-[#ff1744] text-white text-[8px] font-bold px-1 rounded-sm z-20 shadow-lg">⚠️</div>
                     )}
-
+                    {isAltPos && (
+                      <div className="absolute -top-2 -right-2 bg-yellow-500 text-white text-[8px] font-bold px-1 rounded-sm z-20 shadow-lg">⚠️</div>
+                    )}
                     {player && (
                       <>
                         <div className="mt-1 bg-black/80 backdrop-blur-sm border border-white/10 px-2 py-0.5 rounded text-[10px] font-bold text-white tracking-widest uppercase truncate max-w-[70px] pointer-events-none">
@@ -403,7 +485,14 @@ export function TacticsContainer() {
                       <div className="w-8 h-8 rounded-full bg-[#0a0e1a] flex items-center justify-center text-xs border border-white/10 shadow-inner">👤</div>
                       <div>
                         <div className="text-sm font-bold text-white leading-tight">{p.lastName}</div>
-                        <div className="text-[10px] text-[#00c8ff] font-bold tracking-widest bg-[#00c8ff]/10 px-1.5 py-0.5 rounded inline-block mt-0.5">{p.position}</div>
+                        <div className="flex items-center gap-1 mt-0.5">
+                          <div className="text-[10px] text-[#00c8ff] font-bold tracking-widest bg-[#00c8ff]/10 px-1.5 py-0.5 rounded inline-block">{p.position}</div>
+                          {p.alternatePositions && p.alternatePositions.length > 0 && (
+                            <div className="text-[9px] text-[#8892b0] bg-white/5 border border-white/10 px-1.5 py-0.5 rounded inline-block truncate max-w-[60px]">
+                              {p.alternatePositions.join(', ')}
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
                     <div className="font-orbitron font-bold text-[#f5c842] text-lg">{p.overall}</div>

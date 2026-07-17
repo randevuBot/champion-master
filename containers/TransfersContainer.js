@@ -15,7 +15,7 @@ export function TransfersContainer() {
   const [selectedPlayer, setSelectedPlayer] = useState(null);
   const [offerAmount, setOfferAmount] = useState(0);
 
-  if (!myClubId) return null;
+  if (!myClubId) return <div className="min-h-screen w-full"></div>;
 
   const getRatingColor = (overall) => {
     if (overall >= 85) return 'text-[#f5c842]';
@@ -162,8 +162,13 @@ export function TransfersContainer() {
                         <div className="w-10 h-10 rounded-full bg-[#0a0e1a] border border-white/10 flex items-center justify-center text-lg shadow-inner">👤</div>
                         <div>
                           <div className="font-bold text-white text-sm">{p.lastName}</div>
-                          <div className="text-[10px] text-[#8892b0] uppercase tracking-wider flex gap-2">
-                            <span>{p.position}</span>
+                          <div className="text-[10px] text-[#8892b0] uppercase tracking-wider flex items-center gap-2">
+                            <span className="font-bold text-white">{p.position}</span>
+                            {p.alternatePositions && p.alternatePositions.length > 0 && (
+                              <span className="text-[8px] border border-white/10 px-1 rounded bg-black/40">
+                                {p.alternatePositions.join(', ')}
+                              </span>
+                            )}
                             <span>•</span>
                             <span>{p.age} Yaş</span>
                           </div>
@@ -212,7 +217,7 @@ export function TransfersContainer() {
                 
                 <h3 className="text-2xl font-rajdhani font-bold text-white mb-1 relative z-10">{selectedPlayer.firstName} {selectedPlayer.lastName}</h3>
                 <div className="inline-block bg-white/10 px-3 py-1 rounded-full text-[10px] font-bold tracking-[2px] uppercase text-[#00c8ff] mb-4 border border-white/10 relative z-10">
-                  {selectedPlayer.position} • {selectedPlayer.age} Yaş
+                  {selectedPlayer.position} {selectedPlayer.alternatePositions?.length ? `(+${selectedPlayer.alternatePositions.join(', ')})` : ''} • {selectedPlayer.age} Yaş
                 </div>
                 
                 <div className="grid grid-cols-3 gap-2">

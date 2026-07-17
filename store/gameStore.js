@@ -229,6 +229,8 @@ export const useGameStore = create(
         set({ formation, lineup, customPositions: {} });
       },
 
+      setTactics: (tactics) => set((state) => ({ tactics: { ...state.tactics, ...tactics } })),
+
       setCustomPositions: (positions) => set({ customPositions: positions }),
 
       setLineup: (lineup) => set({ lineup }),
