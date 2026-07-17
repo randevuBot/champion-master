@@ -36,6 +36,7 @@ export function MatchContainer() {
   const [selectedSubIn, setSelectedSubIn] = useState(null);
   const [currentTactics, setCurrentTactics] = useState({ style: 'balanced', press: 'medium', tempo: 'normal' });
   const [isMatchPaused, setIsMatchPaused] = useState(false);
+  const [isUserPaused, setIsUserPaused] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -302,6 +303,7 @@ export function MatchContainer() {
       setInjuryPause(null);
     }
     setIsHalfTime(false);
+    setIsUserPaused(false);
     setIsMatchPaused(false);
     engine.updateTactics(isHome ? 'home' : 'away', currentTactics);
     engine.resume();
@@ -318,6 +320,13 @@ export function MatchContainer() {
       engine.paused = true;
       setIsMatchPaused(true);
     }
+  };
+
+  const openTacticsMenu = () => {
+    if (!engine) return;
+    engine.paused = true;
+    setIsMatchPaused(true);
+    setIsUserPaused(true);
   };
 
   const fastForward = () => {
@@ -505,6 +514,12 @@ export function MatchContainer() {
           {engine && (
             <>
               <button 
+                onClick={openTacticsMenu}
+                className="bg-gradient-to-r from-[#00c8ff]/20 to-[#0090b8]/20 text-[#00c8ff] hover:bg-[#00c8ff]/30 border border-[#00c8ff]/50 px-6 py-3 rounded-xl font-bold tracking-widest uppercase transition-colors shadow-[0_0_15px_rgba(0,200,255,0.15)]"
+              >
+                🛠 Taktik & Oyuncu Değiştir
+              </button>
+              <button 
                 onClick={togglePause}
                 className={`px-6 py-3 rounded-xl font-bold tracking-widest uppercase border transition-colors ${
                   isMatchPaused 
@@ -613,8 +628,8 @@ export function MatchContainer() {
         </div>
       </div>
 
-      {/* Devre Arası / Sakatlık Modalı */}
-      {(isHalfTime || injuryPause) && (
+      {/* Devre Arası / Sakatlık / Taktik Modalı */}
+      {(isHalfTime || injuryPause || isUserPaused) && (
         <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-4 sm:p-6">
           <div className="bg-[#0f1629] w-full max-w-[1200px] h-full max-h-[92vh] flex flex-col rounded-3xl border border-[#00c8ff]/30 shadow-[0_0_60px_rgba(0,200,255,0.15)] relative overflow-hidden">
             
@@ -625,7 +640,7 @@ export function MatchContainer() {
             <div className="p-5 sm:p-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-white/10 bg-black/20 flex-shrink-0 relative z-10">
               <div>
                 <h2 className={`text-2xl sm:text-4xl font-rajdhani font-black text-transparent bg-clip-text bg-gradient-to-r ${injuryPause ? 'from-red-500 to-red-300' : 'from-white to-[#00c8ff]'} uppercase tracking-widest leading-none`}>
-                  {injuryPause ? "Zorunlu Değişiklik" : "Devre Arası"}
+                  {injuryPause ? "Zorunlu Değişiklik" : isHalfTime ? "Devre Arası" : "Taktik Molası"}
                 </h2>
                 {injuryPause && (
                   <p className="text-red-400 mt-1 font-bold text-sm sm:text-base">
