@@ -531,10 +531,10 @@ export function HomeContainer() {
               </div>
             </div>
             
-            <div className="flex-1 flex overflow-hidden">
+            <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
               {/* Left Side: Grid */}
-              <div className="flex-1 flex flex-col border-r border-white/5 bg-[#080c14]">
-                <div className="flex p-4 gap-2 border-b border-white/5 overflow-x-auto">
+              <div className="flex-1 flex flex-col border-b lg:border-b-0 lg:border-r border-white/5 bg-[#080c14] overflow-hidden">
+                <div className="flex p-4 gap-2 border-b border-white/5 overflow-x-auto shrink-0">
                   <button className={`px-6 py-2.5 rounded-full text-sm font-bold tracking-wider whitespace-nowrap transition-colors ${activeLeagueTab === 'superlig' ? 'bg-[#00c8ff]/20 text-[#00c8ff] border border-[#00c8ff]/30' : 'bg-[#141b2d] text-[#8892b0] border border-white/5 hover:text-white'}`} onClick={() => setActiveLeagueTab('superlig')}>🇹🇷 Süper Lig</button>
                   <button className={`px-6 py-2.5 rounded-full text-sm font-bold tracking-wider whitespace-nowrap transition-colors ${activeLeagueTab === 'premier' ? 'bg-[#00c8ff]/20 text-[#00c8ff] border border-[#00c8ff]/30' : 'bg-[#141b2d] text-[#8892b0] border border-white/5 hover:text-white'}`} onClick={() => setActiveLeagueTab('premier')}>🏴󠁧󠁢󠁥󠁮󠁧󠁿 Premier League</button>
                   <button className={`px-6 py-2.5 rounded-full text-sm font-bold tracking-wider whitespace-nowrap transition-colors ${activeLeagueTab === 'laliga' ? 'bg-[#00c8ff]/20 text-[#00c8ff] border border-[#00c8ff]/30' : 'bg-[#141b2d] text-[#8892b0] border border-white/5 hover:text-white'}`} onClick={() => setActiveLeagueTab('laliga')}>🇪🇸 La Liga</button>
@@ -586,7 +586,7 @@ export function HomeContainer() {
               </div>
 
               {/* Right Side: Preview */}
-              <div className="w-[400px] shrink-0 bg-[#0f1629] relative overflow-y-auto custom-scrollbar">
+              <div className="w-full lg:w-[400px] shrink-0 bg-[#0f1629] relative overflow-y-auto custom-scrollbar border-t lg:border-t-0 border-white/5">
                 {selectedClub ? (
                   <motion.div 
                     key={selectedClub.id}
