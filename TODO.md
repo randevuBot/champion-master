@@ -68,7 +68,7 @@ Yukarıdaki analiz ışığında uygulanabilir adım adım planımız:
 - [x] **Görev 7:** Save Dosyası Temizleyici (Garbage Collector).
 - [x] **Görev 8:** Stadyum, Sponsor ve Tesis (Facilities) geliştirme ekranı.
 - [x] **Görev 9:** Gözlemci Sistemi (Scouting - Fog of War).
-- [ ] **Görev 10:** Takım Uyumu (Chemistry) ve Oyuncu Mutsuzluğu.
+- [x] **Görev 10:** Takım Uyumu (Chemistry) ve Oyuncu Mutsuzluğu.
 - [ ] **Görev 11:** Teknik ekip işe alım sistemi.
 - [ ] **Görev 12:** Kupa fikstürü turnuva ağacı oluşturma.
 - [ ] **Görev 13:** Groq API: Yapay Zeka Odaklı Transfer Görüşmeleri (AI Negotiations).

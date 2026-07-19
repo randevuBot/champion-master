@@ -6,6 +6,8 @@ import { formatMoney } from "@/lib/game/utils";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
+import { TournamentEngine } from "@/lib/game/tournamentEngine";
+import { ClubLogo } from "@/components/shared/ClubLogo";
 
 const itemVariants = {
   hidden: { opacity: 0, y: 20 },
@@ -14,13 +16,20 @@ const itemVariants = {
 
 export function DashboardContainer() {
   const router = useRouter();
-  const { myClubId, week, fixtures, seasonStats, leagueTable, finances, manager, news, morale, chemistry } = useGameStore();
+  const { myClubId, week, fixtures, seasonStats, leagueTable, finances, manager, news, morale, chemistry, cupState } = useGameStore();
   const [openSection, setOpenSection] = useState("club"); // Default open section
 
   if (!myClubId) return null;
 
   const club = ChampionMasterData.clubs.find(c => c.id === myClubId);
-  const nextMatch = fixtures.find(f => !f.played && f.week === week && (f.homeClubId === myClubId || f.awayClubId === myClubId));
+  
+  // Önce kupa maçı var mı diye kontrol edelim
+  const isCupWeek = cupState && TournamentEngine.CUP_WEEKS[cupState.currentRound] === week;
+  const myCupMatch = isCupWeek ? cupState.matches.find(m => !m.played && (m.homeClubId === myClubId || m.awayClubId === myClubId)) : null;
+  
+  // Eğer oynanmamış kupa maçı varsa onu göster, yoksa lig maçını göster
+  const nextMatch = myCupMatch || fixtures.find(f => !f.played && f.week === week && (f.homeClubId === myClubId || f.awayClubId === myClubId));
+  const isNextMatchCup = !!myCupMatch;
   
   let homeTeam, awayTeam;
   if (nextMatch) {
@@ -106,16 +115,17 @@ export function DashboardContainer() {
                   <div className="bg-[#141b2d]/80 backdrop-blur-md rounded-2xl border border-white/5 shadow-[0_16px_48px_rgba(0,0,0,0.4)] overflow-hidden">
                     <div className="px-6 py-4 border-b border-white/5 bg-black/20 flex justify-between items-center">
                       <span className="font-rajdhani font-bold text-lg tracking-wider text-[#e8eaf6] uppercase">Sıradaki Maç</span>
-                      <span className="bg-[#f5c842]/10 text-[#f5c842] border border-[#f5c842]/30 px-3 py-1 rounded-full text-[10px] font-bold tracking-widest uppercase shadow-[0_0_10px_rgba(245,200,66,0.15)]">LİG MAÇI</span>
+                      {isNextMatchCup ? (
+                        <span className="bg-[#00e676]/10 text-[#00e676] border border-[#00e676]/30 px-3 py-1 rounded-full text-[10px] font-bold tracking-widest uppercase shadow-[0_0_10px_rgba(0,230,118,0.15)]">🏆 TÜRKİYE KUPASI</span>
+                      ) : (
+                        <span className="bg-[#f5c842]/10 text-[#f5c842] border border-[#f5c842]/30 px-3 py-1 rounded-full text-[10px] font-bold tracking-widest uppercase shadow-[0_0_10px_rgba(245,200,66,0.15)]">LİG MAÇI</span>
+                      )}
                     </div>
                     <div className="p-4 sm:p-8">
                       {nextMatch ? (
                         <div className="flex flex-col sm:flex-row justify-between items-center gap-4 sm:gap-0">
                           <div className="flex-1 flex flex-col items-center">
-                            <div className="w-16 h-16 sm:w-[88px] sm:h-[88px] rounded-full shadow-[0_8px_24px_rgba(0,0,0,0.5)] flex items-center justify-center text-xl sm:text-3xl font-orbitron font-black text-white mb-2 sm:mb-4 relative" style={{ background: `linear-gradient(135deg, ${homeTeam?.colors?.primary}, ${homeTeam?.colors?.secondary})` }}>
-                              {homeTeam?.shortName.slice(0,3)}
-                              <div className="absolute inset-0 rounded-full border border-white/20"></div>
-                            </div>
+                            <ClubLogo club={homeTeam} className="w-16 h-16 sm:w-24 sm:h-24 mb-2 sm:mb-4" />
                             <div className="font-rajdhani font-bold text-base sm:text-xl text-center truncate max-w-[120px]">{homeTeam?.name}</div>
                           </div>
                           
@@ -133,10 +143,7 @@ export function DashboardContainer() {
                           </div>
                           
                           <div className="flex-1 flex flex-col items-center">
-                            <div className="w-16 h-16 sm:w-[88px] sm:h-[88px] rounded-full shadow-[0_8px_24px_rgba(0,0,0,0.5)] flex items-center justify-center text-xl sm:text-3xl font-orbitron font-black text-white mb-2 sm:mb-4 relative" style={{ background: `linear-gradient(135deg, ${awayTeam?.colors?.primary}, ${awayTeam?.colors?.secondary})` }}>
-                              {awayTeam?.shortName.slice(0,3)}
-                              <div className="absolute inset-0 rounded-full border border-white/20"></div>
-                            </div>
+                            <ClubLogo club={awayTeam} className="w-16 h-16 sm:w-24 sm:h-24 mb-2 sm:mb-4" />
                             <div className="font-rajdhani font-bold text-base sm:text-xl text-center truncate max-w-[120px]">{awayTeam?.name}</div>
                           </div>
                         </div>

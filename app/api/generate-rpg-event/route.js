@@ -28,7 +28,10 @@ export async function POST(req) {
     Hafta: ${week}
     Oyuncu (Gerekirse bu ismi kullan): ${randomPlayerName}
 
-    LÜTFEN SADECE AŞAĞIDAKİ JSON FORMATINDA VE KESİNLİKLE TÜRKÇE DİLİNDE YANIT VER (İngilizce kullanmak yasaktır, asla markdown kullanma, doğrudan JSON objesi dön):
+    ÇOK ÖNEMLİ VE KESİN KURAL: CEVABININ TAMAMI, HER BİR KELİMESİ KESİNLİKLE VE SADECE **TÜRKÇE** OLMALIDIR.
+    ARAPÇA, İNGİLİZCE VEYA HERHANGİ BİR BAŞKA DİLDE TEK BİR KELİME BİLE YAZMAK KESİNLİKLE YASAKTIR. BÜTÜN JSON DEĞERLERİ %100 TÜRKÇE OLMALIDIR.
+
+    LÜTFEN SADECE AŞAĞIDAKİ JSON FORMATINDA VE KESİNLİKLE TÜRKÇE DİLİNDE YANIT VER (Asla markdown kullanma, doğrudan JSON objesi dön):
     {
       "subject": "Olayın Başlığı (Uygun emoji ekle)",
       "sender": "Maili Gönderen (Örn: Kulüp Başkanı, Gizli Numara, Gazeteci, Avukat vb.)",

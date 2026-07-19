@@ -535,9 +535,15 @@ export function HomeContainer() {
               {/* Left Side: Grid */}
               <div className="flex-1 flex flex-col border-b lg:border-b-0 lg:border-r border-white/5 bg-[#080c14] overflow-hidden">
                 <div className="flex p-4 gap-2 border-b border-white/5 overflow-x-auto shrink-0">
-                  <button className={`px-6 py-2.5 rounded-full text-sm font-bold tracking-wider whitespace-nowrap transition-colors ${activeLeagueTab === 'superlig' ? 'bg-[#00c8ff]/20 text-[#00c8ff] border border-[#00c8ff]/30' : 'bg-[#141b2d] text-[#8892b0] border border-white/5 hover:text-white'}`} onClick={() => setActiveLeagueTab('superlig')}>🇹🇷 Süper Lig</button>
-                  <button className={`px-6 py-2.5 rounded-full text-sm font-bold tracking-wider whitespace-nowrap transition-colors ${activeLeagueTab === 'premier' ? 'bg-[#00c8ff]/20 text-[#00c8ff] border border-[#00c8ff]/30' : 'bg-[#141b2d] text-[#8892b0] border border-white/5 hover:text-white'}`} onClick={() => setActiveLeagueTab('premier')}>🏴󠁧󠁢󠁥󠁮󠁧󠁿 Premier League</button>
-                  <button className={`px-6 py-2.5 rounded-full text-sm font-bold tracking-wider whitespace-nowrap transition-colors ${activeLeagueTab === 'laliga' ? 'bg-[#00c8ff]/20 text-[#00c8ff] border border-[#00c8ff]/30' : 'bg-[#141b2d] text-[#8892b0] border border-white/5 hover:text-white'}`} onClick={() => setActiveLeagueTab('laliga')}>🇪🇸 La Liga</button>
+                  {ChampionMasterData.leagues.map(league => (
+                    <button 
+                      key={league.id}
+                      className={`px-6 py-2.5 rounded-full text-sm font-bold tracking-wider whitespace-nowrap transition-colors ${activeLeagueTab === league.id ? 'bg-[#00c8ff]/20 text-[#00c8ff] border border-[#00c8ff]/30' : 'bg-[#141b2d] text-[#8892b0] border border-white/5 hover:text-white'}`} 
+                      onClick={() => setActiveLeagueTab(league.id)}
+                    >
+                      {league.name}
+                    </button>
+                  ))}
                 </div>
                 
                 <div className="flex-1 overflow-y-auto custom-scrollbar p-6">

@@ -30,7 +30,7 @@ export async function POST(req) {
     Teklif Edilen Net Para: ${offerString}
     
     KURALLAR:
-    - ÖNEMLİ: KESİNLİKLE VE SADECE TÜRKÇE YAZACAKSIN. İNGİLİZCE KELİMELER KULLANMA.
+    - ÇOK ÖNEMLİ VE KESİN KURAL: CEVABININ TAMAMI, HER BİR KELİMESİ KESİNLİKLE VE SADECE **TÜRKÇE** OLMALIDIR. ARAPÇA, İNGİLİZCE VEYA DİĞER DİLLERİ KULLANMAK KESİNLİKLE YASAKTIR. BÜTÜN JSON DEĞERLERİ %100 TÜRKÇE OLMALIDIR.
     - Olayın arkasına bir hikaye uydur (Örn: "Forvetleri sakatlandı acil arıyorlar", "Arap şeyhleri takımı satın aldı parayı saçıyorlar", "Teknik direktörleri bu oyuncuya aşık" vb.)
     - LÜTFEN SADECE AŞAĞIDAKİ JSON FORMATINDA YANIT VER (Asla markdown veya fazladan açıklama kullanma, doğrudan JSON objesi dön):
     {

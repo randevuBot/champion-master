@@ -10,7 +10,7 @@ import { useState, useEffect } from 'react';
 
 export function Sidebar({ onClose }) {
   const pathname = usePathname();
-  const { myClubId, season, week, finances, morale, setPlaying } = useGameStore();
+  const { myClubId, season, week, finances, morale, setPlaying, news } = useGameStore();
   const [isCollapsed, setIsCollapsed] = useState(false);
 
   useEffect(() => {
@@ -26,6 +26,7 @@ export function Sidebar({ onClose }) {
   if (!myClubId) return null;
 
   const club = ChampionMasterData.clubs.find(c => c.id === myClubId);
+  const unreadCount = news?.filter(n => !n.read)?.length || 0;
 
   const toggleMenu = (key) => {
     if (!isCollapsed) {
@@ -33,7 +34,7 @@ export function Sidebar({ onClose }) {
     }
   };
 
-  const NavItem = ({ href, icon, label, exact = false }) => {
+  const NavItem = ({ href, icon, label, exact = false, badge = null }) => {
     const isActive = exact ? pathname === href : pathname.startsWith(href);
     return (
       <Link href={href} className="block w-full" onClick={onClose} title={label}>
@@ -44,7 +45,17 @@ export function Sidebar({ onClose }) {
           {isActive && (
             <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-1/2 bg-[#00c8ff] rounded-r-full z-0 shadow-[0_0_10px_#00c8ff]" />
           )}
-          <span className="relative z-10 text-xl sm:text-2xl flex justify-center flex-shrink-0">{icon}</span>
+          <div className="relative z-10 flex justify-center flex-shrink-0">
+            <span className="text-xl sm:text-2xl">{icon}</span>
+            {badge > 0 && (
+              <span className={`absolute ${isCollapsed ? '-top-1 -right-1' : '-top-1.5 -right-2'} flex h-4 w-4`}>
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-4 w-4 bg-red-500 items-center justify-center text-[9px] font-bold text-white shadow-[0_0_8px_rgba(239,68,68,0.8)]">
+                  {badge > 9 ? '9+' : badge}
+                </span>
+              </span>
+            )}
+          </div>
           {!isCollapsed && <span className="relative z-10 font-medium text-[15px] truncate">{label}</span>}
         </div>
       </Link>
@@ -134,11 +145,12 @@ export function Sidebar({ onClose }) {
           <AnimatePresence>
             {(openMenus.yonetim || isCollapsed) && (
               <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden space-y-1">
-                <NavItem href="/inbox" icon="📩" label="Mesajlar" />
+                <NavItem href="/inbox" icon="📩" label="Mesajlar" badge={unreadCount} />
                 <NavItem href="/calendar" icon="📅" label="Takvim" />
                 <NavItem href="/transfers" icon="🤝" label="Transferler" />
                 <NavItem href="/finance" icon="💰" label="Finans" />
                 <NavItem href="/academy" icon="🌱" label="Akademi" />
+                <NavItem href="/staff" icon="👔" label="Teknik Ekip" />
               </motion.div>
             )}
           </AnimatePresence>
@@ -150,6 +162,7 @@ export function Sidebar({ onClose }) {
             {(openMenus.lig || isCollapsed) && (
               <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden space-y-1">
                 <NavItem href="/stats" icon="📊" label="İstatistikler" />
+                <NavItem href="/cup" icon="🏆" label="Kupa Fikstürü" />
               </motion.div>
             )}
           </AnimatePresence>

@@ -8,6 +8,8 @@ import { MatchEngine } from "@/lib/game/match";
 import { Pitch2D } from "@/lib/game/pitch2d";
 import { getAudioEngine } from "@/lib/game/audio";
 import { motion, AnimatePresence } from "framer-motion";
+import { ClubLogo } from "@/components/shared/ClubLogo";
+import { TournamentEngine } from "@/lib/game/tournamentEngine";
 
 export function MatchContainer() {
   const router = useRouter();
@@ -64,7 +66,9 @@ export function MatchContainer() {
     }
   }, [myClubId, router, isFinished]);
 
-  const fixture = fixtures.find(f => f.week === week && (f.homeClubId === myClubId || f.awayClubId === myClubId));
+  const isCupWeek = useGameStore.getState().cupState && TournamentEngine.CUP_WEEKS[useGameStore.getState().cupState.currentRound] === week;
+  const cupFixture = isCupWeek ? useGameStore.getState().cupState.matches.find(m => !m.played && (m.homeClubId === myClubId || m.awayClubId === myClubId)) : null;
+  const fixture = cupFixture || fixtures.find(f => f.week === week && (f.homeClubId === myClubId || f.awayClubId === myClubId));
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -98,35 +102,17 @@ export function MatchContainer() {
     fetchAiPrematch();
   }, [mounted, fixture, engine, isFinished, aiData, isAiLoading, myClubId]);
 
-  if (!mounted || !myClubId) return <div className="min-h-screen w-full"></div>;
-  
-  if (!fixture || (fixture.played && !isFinished)) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[70vh]">
-        <div className="text-[80px] mb-6 opacity-50 grayscale">📅</div>
-        <h2 className="text-3xl font-rajdhani font-bold text-white mb-2">Bu Hafta Maçınız Yok</h2>
-        <p className="text-[#8892b0] mb-8">Takımınız bu haftayı bay geçiyor veya fikstür tamamlandı.</p>
-        <button 
-          onClick={() => router.push("/")}
-          className="bg-gradient-to-r from-[#00c8ff] to-[#0090b8] text-white px-8 py-3 rounded-xl font-bold tracking-widest uppercase shadow-[0_0_20px_rgba(0,200,255,0.3)] hover:scale-105 transition-transform"
-        >
-          Ana Ekrana Dön
-        </button>
-      </div>
-    );
-  }
-
   const isHome = fixture?.homeClubId === myClubId;
-  const oppClubId = isHome ? fixture.awayClubId : fixture.homeClubId;
-  const oppClub = ChampionMasterData.clubs.find(c => c.id === oppClubId);
-  const myClub = ChampionMasterData.clubs.find(c => c.id === myClubId);
+  const oppClubId = isHome ? fixture?.awayClubId : fixture?.homeClubId;
+  const oppClub = oppClubId ? ChampionMasterData.clubs.find(c => c.id === oppClubId) : null;
+  const myClub = myClubId ? ChampionMasterData.clubs.find(c => c.id === myClubId) : null;
   const homeTeam = isHome ? myClub : oppClub;
   const awayTeam = isHome ? oppClub : myClub;
 
   const getPosLabel = (pos) => pos;
 
   useEffect(() => {
-    if (oppClub && oppClub.prestige >= 7 && !showPreMatchEvent && minute === 0 && !engine) {
+    if (oppClub && oppClub.prestige >= 7 && !showPreMatchEvent && minute === 0 && !engine && !preMatchAiData) {
       const fetchPreMatchSpeech = async () => {
         setIsPreMatchAiLoading(true);
         setShowPreMatchEvent(true);
@@ -146,7 +132,25 @@ export function MatchContainer() {
       };
       fetchPreMatchSpeech();
     }
-  }, [oppClub]);
+  }, [oppClub, showPreMatchEvent, minute, engine, homeTeam, awayTeam, preMatchAiData]);
+
+  if (!mounted || !myClubId) return <div className="min-h-screen w-full"></div>;
+  
+  if (!fixture || (fixture.played && !isFinished)) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[70vh]">
+        <div className="text-[80px] mb-6 opacity-50 grayscale">📅</div>
+        <h2 className="text-3xl font-rajdhani font-bold text-white mb-2">Bu Hafta Maçınız Yok</h2>
+        <p className="text-[#8892b0] mb-8">Takımınız bu haftayı bay geçiyor veya fikstür tamamlandı.</p>
+        <button 
+          onClick={() => router.push("/")}
+          className="bg-gradient-to-r from-[#00c8ff] to-[#0090b8] text-white px-8 py-3 rounded-xl font-bold tracking-widest uppercase shadow-[0_0_20px_rgba(0,200,255,0.3)] hover:scale-105 transition-transform"
+        >
+          Ana Ekrana Dön
+        </button>
+      </div>
+    );
+  }
 
   const handlePreMatchBoost = () => {
     const bonus = preMatchAiData?.bonusAmount || 1000000;
@@ -200,15 +204,16 @@ export function MatchContainer() {
     const audio = getAudioEngine();
     if (audio) audio.playStartWhistle();
 
-    const myTactics = { ...(useGameStore.getState().tactics || { style: 'balanced', press: 'medium', tempo: 'normal' }) };
-    if (preMatchBoostApplied) {
-      myTactics.preMatchBoost = true;
-    }
-
-    const homeTactics = isHome ? myTactics : { style: 'balanced', press: 'medium', tempo: 'normal' };
-    const awayTactics = isHome ? { style: 'balanced', press: 'medium', tempo: 'normal' } : myTactics;
-
     const state = useGameStore.getState();
+
+    const finalMyTactics = { ...(state.tactics || { style: 'balanced', press: 'medium', tempo: 'normal' }) };
+    if (preMatchBoostApplied) {
+      finalMyTactics.preMatchBoost = true;
+    }
+    finalMyTactics.chemistry = state.chemistry || 85;
+
+    const cpuTactics = { style: 'balanced', press: 'medium', tempo: 'normal', chemistry: 80 };
+
     const oppSquad = ChampionMasterData.players.filter(p => p.clubId === oppClubId).map(p => ({
       ...p,
       fitness: 80 + Math.random() * 20,
@@ -220,22 +225,22 @@ export function MatchContainer() {
       fitness: state.squadFitness[p.id] || 100,
       morale: state.morale || 70
     }));
-    
-    // CPU için otomatik taktikler belirleyebiliriz, şimdilik dengeli olsun
-    const cpuTactics = { style: 'balanced', press: 'medium', tempo: 'normal' };
-    const myTactics = useGameStore.getState().tactics || cpuTactics;
 
     setCurrentLineup([...lineup]);
-    setCurrentTactics({ ...myTactics });
+    setCurrentTactics({ ...finalMyTactics });
     setSubsLeft(5);
 
     const homeSquad = isHome ? myClubPlayers : oppSquad;
     const awaySquad = isHome ? oppSquad : myClubPlayers;
     
-    const homeTactics = isHome ? myTactics : cpuTactics;
-    const awayTactics = isHome ? cpuTactics : myTactics;
+    const finalHomeTactics = isHome ? finalMyTactics : cpuTactics;
+    const finalAwayTactics = isHome ? cpuTactics : finalMyTactics;
 
-    const me = new MatchEngine(homeTeam, awayTeam, homeSquad, awaySquad, homeTactics, awayTactics, aiData);
+    const myStaff = state.staff;
+    const homeStaff = isHome ? myStaff : null;
+    const awayStaff = isHome ? null : myStaff;
+
+    const me = new MatchEngine(homeTeam, awayTeam, homeSquad, awaySquad, finalHomeTactics, finalAwayTactics, aiData, homeStaff, awayStaff);
     
     me.callbacks.playerInjured = (data) => {
       const isMyTeam = data.team === (homeTeam.id === myClubId ? 'home' : 'away');
@@ -276,12 +281,14 @@ export function MatchContainer() {
         setIsFinished(true);
         if (audio) audio.playFullTimeWhistle();
 
-        const { processMatchResult } = useGameStore.getState();
+        const { processMatchResult, cupState, week } = useGameStore.getState();
+        const isCupMatch = cupState && TournamentEngine.CUP_WEEKS[cupState.currentRound] === week && cupState.matches.some(m => !m.played && (m.homeClubId === myClubId || m.awayClubId === myClubId));
+        
         processMatchResult({
           ...result,
           homeClubId: homeTeam.id,
           awayClubId: awayTeam.id
-        }, true);
+        }, true, !!isCupMatch);
 
         // Fetch Post-Match Report
         setIsAiPostMatchLoading(true);
@@ -441,9 +448,7 @@ export function MatchContainer() {
             <div className="flex items-center justify-center gap-8 md:gap-16 relative z-10 mt-6">
               {/* Home Team */}
               <div className="flex flex-col items-center w-32">
-                <div className="w-24 h-24 rounded-full border-2 border-white/20 shadow-[0_0_30px_rgba(0,0,0,0.5)] flex items-center justify-center text-3xl font-orbitron font-black text-white mb-4" style={{ background: `linear-gradient(135deg, ${homeTeam.colors.primary}, ${homeTeam.colors.secondary})` }}>
-                  {homeTeam.shortName.slice(0,3)}
-                </div>
+                <ClubLogo club={homeTeam} className="w-24 h-24 mb-4" />
                 <div className="font-rajdhani font-bold text-xl text-white text-center leading-tight">{homeTeam.name}</div>
               </div>
 
@@ -459,9 +464,7 @@ export function MatchContainer() {
 
               {/* Away Team */}
               <div className="flex flex-col items-center w-32">
-                <div className="w-24 h-24 rounded-full border-2 border-white/20 shadow-[0_0_30px_rgba(0,0,0,0.5)] flex items-center justify-center text-3xl font-orbitron font-black text-white mb-4" style={{ background: `linear-gradient(135deg, ${awayTeam.colors.primary}, ${awayTeam.colors.secondary})` }}>
-                  {awayTeam.shortName.slice(0,3)}
-                </div>
+                <ClubLogo club={awayTeam} className="w-24 h-24 mb-4" />
                 <div className="font-rajdhani font-bold text-xl text-white text-center leading-tight">{awayTeam.name}</div>
               </div>
             </div>

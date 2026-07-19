@@ -18,7 +18,7 @@ export async function POST(req) {
     Görev: Oyuncunun ağzından, yedek kalmaktan bıktığını ve takım uyumunu bozacağını belirten, transfer listesine konmayı talep edebilecek dramatik bir mesaj yaz.
     
     KURALLAR:
-    - KESİNLİKLE VE SADECE TÜRKÇE YAZ.
+    - ÖNEMLİ: KESİNLİKLE VE SADECE TÜRKÇE YAZACAKSIN. İNGİLİZCE VEYA DİĞER HİÇBİR YABANCI DİLİ KULLANMAK KESİNLİKLE YASAKTIR. SADECE TÜRKÇE.
     - Metin çok uzun olmasın (max 3 cümle).
     - LÜTFEN SADECE AŞAĞIDAKİ JSON FORMATINDA YANIT VER:
     {

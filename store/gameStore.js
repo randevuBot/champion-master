@@ -5,6 +5,8 @@ import { getActiveUser } from '@/lib/auth';
 import ChampionMasterData from '@/lib/game/data';
 import { GameEngine } from '@/lib/game/engine';
 import { MatchEngine } from '@/lib/game/match';
+import { generateStaffMarket } from '@/lib/game/utils';
+import { TournamentEngine } from '@/lib/game/tournamentEngine';
 
 // Natively obfuscate data without external dependencies (Prevents DevTools editing)
 function obfuscate(str) {
@@ -165,13 +167,22 @@ const defaultState = {
   seasonStats: { played: 0, won: 0, drawn: 0, lost: 0, goalsFor: 0, goalsAgainst: 0, points: 0, cleanSheets: 0 },
   leagueTable: [],
   fixtures: [],
+  clubLeagues: {},
   transferHistory: [],
   scoutedPlayers: [],
-  news: [],
   playerStats: {},
   morale: 70,
   chemistry: 85,
-  isPlaying: false
+  staff: {
+    assistant: null, // Asistan Menajer (Taktik ve Uyum Bonus)
+    coach: null,     // Antrenör (Hücum/Savunma Bonus)
+    gkCoach: null,   // Kaleci Antrenörü (Kaleci Bonus)
+    fitnessCoach: null // Kondisyoner (Fitness Bonus)
+  },
+  availableStaff: { assistant: [], coach: [], gkCoach: [], fitnessCoach: [] },
+  news: [],
+  isPlaying: false,
+  cupState: null
 };
 
 export const useGameStore = create(
@@ -180,6 +191,34 @@ export const useGameStore = create(
       ...defaultState,
       
       setPlaying: (playing) => set({ isPlaying: playing }),
+
+      hireStaff: (role, staffMember) => {
+        const state = get();
+        if (state.finances.balance >= staffMember.salary) {
+          set((s) => ({
+            finances: {
+              ...s.finances,
+              balance: s.finances.balance - staffMember.salary
+            },
+            staff: {
+              ...s.staff,
+              [role]: staffMember
+            }
+          }));
+          get().addNews({ title: 'Yeni Personel', body: `${staffMember.name} isimli personel ${role} görevine getirildi.`, type: 'info' });
+        } else {
+          get().addNews({ title: 'Bütçe Yetersiz', body: `${staffMember.name} ile anlaşılamadı. Kulübün parası yetersiz.`, type: 'warning' });
+        }
+      },
+
+      fireStaff: (role) => {
+        set((s) => ({
+          staff: {
+            ...s.staff,
+            [role]: null
+          }
+        }));
+      },
 
       initGame: (clubId, managerName = 'Mert') => {
         const club = ChampionMasterData.clubs.find(c => c.id === clubId);
@@ -196,13 +235,19 @@ export const useGameStore = create(
           squadFitness[p.id] = 100;
         });
 
-        const fixtures = GameEngine.generateFixtures(clubId);
+        const clubLeagues = {};
+        ChampionMasterData.clubs.forEach(c => {
+          clubLeagues[c.id] = c.leagueId;
+        });
+
+        const fixtures = GameEngine.generateFixtures(club.leagueId);
         const leagueTable = GameEngine.generateLeagueTable(club.leagueId);
         
         set({
           ...defaultState,
           myClubId: clubId,
           manager: { name: managerName, reputation: 50 },
+          clubLeagues,
           finances: {
             ...defaultState.finances,
             balance: club.budget * 1000000,
@@ -217,8 +262,12 @@ export const useGameStore = create(
           leagueTable,
           date: { day: today.getDate(), month: today.getMonth() + 1, year: today.getFullYear() },
           daysPassed: 0,
-          isPlaying: true
+          isPlaying: true,
+          availableStaff: generateStaffMarket(),
+          cupState: TournamentEngine.initCup(ChampionMasterData.clubs)
         });
+        
+        get().addNews({ title: 'Göreve Başladın', body: `${club.name} menajeri olarak göreve başladın. Yönetim senden başarı bekliyor!`, type: 'info' });
       },
       
       setFormation: (formation) => {
@@ -346,10 +395,32 @@ export const useGameStore = create(
         return { success: true };
       },
       
-      processMatchResult: (result, isMyMatch = true) => {
+      processMatchResult: (result, isMyMatch = true, isCupMatch = false) => {
         set((state) => {
           const { home, away, score } = result;
           
+          if (isCupMatch) {
+            // Kupa Maçı
+            const updatedCupMatches = state.cupState.matches.map(m => {
+              if (m.homeClubId === home.id && m.awayClubId === away.id) {
+                let winnerId = null;
+                if (score.home > score.away) winnerId = home.id;
+                else if (score.away > score.home) winnerId = away.id;
+                else {
+                  // Beraberlikte rastgele penaltı kazananı
+                  winnerId = Math.random() > 0.5 ? home.id : away.id;
+                }
+                return { ...m, played: true, score, winnerId };
+              }
+              return m;
+            });
+            
+            return {
+              cupState: { ...state.cupState, matches: updatedCupMatches }
+            };
+          }
+
+          // Lig Maçı
           // Update League Table
           const updatedTable = state.leagueTable.map(row => {
             if (row.clubId === home.id) {
@@ -505,6 +576,45 @@ export const useGameStore = create(
           }
         });
 
+        // Kupa Maçları Simülasyonu
+        if (state.cupState && TournamentEngine.CUP_WEEKS[state.cupState.currentRound] === state.week) {
+          const unplayedCupMatches = state.cupState.matches.filter(m => !m.played);
+          unplayedCupMatches.forEach(fix => {
+            if (fix.homeClubId === state.myClubId || fix.awayClubId === state.myClubId) return;
+            
+            const homeClub = ChampionMasterData.clubs.find(c => c.id === fix.homeClubId);
+            const awayClub = ChampionMasterData.clubs.find(c => c.id === fix.awayClubId);
+            
+            if (homeClub && awayClub) {
+              const homePlayers = ChampionMasterData.players.filter(p => p.clubId === homeClub.id);
+              const awayPlayers = ChampionMasterData.players.filter(p => p.clubId === awayClub.id);
+              const unavailableIds = [...state.injured.map(i => i.playerId), ...state.suspensions.map(s => s.playerId)];
+              const homeLineupIds = GameEngine.autoSelectLineup(homePlayers, '4-3-3', unavailableIds);
+              const awayLineupIds = GameEngine.autoSelectLineup(awayPlayers, '4-3-3', unavailableIds);
+              
+              const homeSquad = homePlayers.filter(p => homeLineupIds.includes(p.id)).map(p => ({ ...p, fitness: 80 + Math.random() * 20, morale: 65 + Math.random() * 25 }));
+              const awaySquad = awayPlayers.filter(p => awayLineupIds.includes(p.id)).map(p => ({ ...p, fitness: 80 + Math.random() * 20, morale: 65 + Math.random() * 25 }));
+              
+              const me = new MatchEngine(homeClub, awayClub, homeSquad, awaySquad);
+              me.speed = 3;
+              me.simulate(() => {}, (result) => {
+                get().processMatchResult(result, false, true); // Kupa maçı
+              });
+            }
+          });
+
+          // Tüm kupa maçları bittiyse (kullanıcınınki dahil) bir sonraki tura geç
+          setTimeout(() => {
+            const freshState = get();
+            if (freshState.cupState && freshState.cupState.matches.every(m => m.played)) {
+              set((s) => ({
+                cupState: TournamentEngine.generateNextRound(s.cupState)
+              }));
+              get().addNews({ title: 'Kupa Kuraları Çekildi', body: `${freshState.cupState.currentRound + 1}. Tur eşleşmeleri belli oldu.`, type: 'info' });
+            }
+          }, 500);
+        }
+
         // Weekly events
         const newInjured = state.injured.map(i => ({ ...i, weeks: i.weeks - 1 })).filter(i => i.weeks > 0);
         const newSuspensions = state.suspensions.map(s => ({ ...s, weeks: s.weeks - 1 })).filter(s => s.weeks > 0);
@@ -563,13 +673,24 @@ export const useGameStore = create(
           ]
         };
 
-        set((s) => ({ 
-          week: s.week + 1,
-          injured: newInjured,
-          suspensions: newSuspensions,
-          squadFitness: newFitness,
-          finances: newFinances
-        }));
+        set((s) => {
+          const newWeek = s.week + 1;
+          const newStaffMarket = newWeek % 4 === 0 ? generateStaffMarket() : s.availableStaff;
+          
+          if (newWeek % 4 === 0) {
+            // Haber olarak da duyuralım
+            get().addNews({ title: 'Teknik Ekip Piyasası', body: 'Teknik ekip piyasasında yeni isimler belirdi.', type: 'info' });
+          }
+
+          return {
+            week: newWeek,
+            injured: newInjured,
+            suspensions: newSuspensions,
+            squadFitness: newFitness,
+            finances: newFinances,
+            availableStaff: newStaffMarket
+          };
+        });
 
         if (Math.random() > 0.7) {
           get().generateSponsorOffers();
@@ -617,13 +738,18 @@ export const useGameStore = create(
           get().generateTransferOffers();
         }
 
-
+        // Sezon Sonu Kontrolü (18. Hafta bittiyse Sezon Biter)
+        if (state.week === 18) {
+          setTimeout(() => {
+            get().processEndOfSeason();
+          }, 1000);
+        }
 
         // Takım Uyumu ve Yıldız Oyuncu İsyanları (Görev 10)
         if (myPlayers.length > 0) {
           const sortedPlayers = [...myPlayers].sort((a,b) => b.overall - a.overall);
           const topStars = sortedPlayers.slice(0, 5); // Takımın en iyi 5 oyuncusu
-          const benchedStars = topStars.filter(p => !state.startingXI.includes(p.id));
+          const benchedStars = topStars.filter(p => !state.lineup.includes(p.id));
           
           let newChemistry = state.chemistry || 85;
           
@@ -729,7 +855,7 @@ export const useGameStore = create(
         }
 
         // RPG Etkinlik Fırlatma (Haftalık %50 ihtimal) - Tamamen Dinamik Yapay Zeka Üretimi
-        if (Math.random() > 0.5 && myClub && newSquad && newSquad.length > 0) {
+        if (Math.random() > 0.5 && myClub && state.squad && state.squad.length > 0) {
           fetch('/api/generate-rpg-event', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -895,7 +1021,11 @@ export const useGameStore = create(
       })),
       
       addNews: (newsItem) => set((state) => ({ 
-        news: [{ ...newsItem, id: Date.now() + Math.random(), week: state.week }, ...state.news].slice(0, 150) 
+        news: [{ ...newsItem, id: Date.now() + Math.random(), week: state.week, read: false }, ...state.news].slice(0, 150) 
+      })),
+
+      markNewsAsRead: (messageId) => set((state) => ({
+        news: state.news.map(msg => msg.id === messageId ? { ...msg, read: true } : msg)
       })),
 
       handleInboxAction: (messageId, actionValue) => {
@@ -1007,6 +1137,152 @@ export const useGameStore = create(
             get().addNews(data);
           }
         }).catch(err => console.error("YZ CPU Transfer Hatası:", err));
+      },
+
+      processEndOfSeason: () => {
+        const state = get();
+        if (!state.myClubId) return;
+
+        const myClub = ChampionMasterData.clubs.find(c => c.id === state.myClubId);
+        const myLeagueId = state.clubLeagues[state.myClubId] || myClub.leagueId;
+
+        // Puan tablosunu sırala
+        const sortedTable = [...state.leagueTable].sort((a, b) => {
+          if (b.points !== a.points) return b.points - a.points;
+          return b.gd - a.gd;
+        });
+
+        const myPos = sortedTable.findIndex(row => row.clubId === state.myClubId) + 1;
+        let prizeMoney = 0;
+        let reputationChange = 0;
+
+        let endMessage = "";
+
+        // Şampiyon
+        if (myPos === 1) {
+          prizeMoney = 15000000;
+          reputationChange = 10;
+          endMessage = "Tebrikler Menajer! Sezonu şampiyon olarak tamamladın. Yönetim ve taraftar sana minnettar. Şampiyonluk primleri kasaya eklendi.";
+        } else if (myPos <= 3) {
+          prizeMoney = 8000000;
+          reputationChange = 5;
+          endMessage = `Sezonu ${myPos}. sırada tamamlayarak büyük bir başarı elde ettin.`;
+        } else if (myPos >= sortedTable.length - 2) {
+          prizeMoney = 1000000;
+          reputationChange = -10;
+          endMessage = "Maalesef sezonu küme düşme hattında tamamladın. Yönetim çok sinirli.";
+        } else {
+          prizeMoney = 4000000;
+          reputationChange = 0;
+          endMessage = `Sezonu ${myPos}. sırada, orta sıralarda tamamladın. Gelecek sezon için daha iyisini yapmalıyız.`;
+        }
+
+        // Küme Düşme ve Çıkma Mantığı
+        const newClubLeagues = { ...state.clubLeagues };
+        
+        const leagueOrder = ['superlig', 'lig1', 'lig2', 'amator'];
+        const currentLeagueIndex = leagueOrder.indexOf(myLeagueId);
+        
+        const relegatedClubs = [];
+        const promotedClubs = [];
+
+        // Eğer en alt ligte değilsek, son 3 takım düşer
+        if (currentLeagueIndex < leagueOrder.length - 1) {
+          const lowerLeague = leagueOrder[currentLeagueIndex + 1];
+          // Kendi ligimizdeki son 3 takımı bul
+          const bottom3 = sortedTable.slice(-3).map(r => r.clubId);
+          bottom3.forEach(cid => {
+            newClubLeagues[cid] = lowerLeague;
+            relegatedClubs.push(cid);
+          });
+
+          // Alt ligden rastgele 3 takım çıkar
+          const lowerLeagueClubs = ChampionMasterData.clubs.filter(c => state.clubLeagues[c.id] === lowerLeague || (!state.clubLeagues[c.id] && c.leagueId === lowerLeague));
+          
+          if (lowerLeagueClubs.length >= 3) {
+            // Basitçe ilk 3'ü al (gerçekte rastgele veya onların tablosuna göre olmalı, ama simülasyon)
+            const promoted = lowerLeagueClubs.sort(() => Math.random() - 0.5).slice(0, 3);
+            promoted.forEach(c => {
+              newClubLeagues[c.id] = myLeagueId;
+              promotedClubs.push(c.id);
+            });
+          }
+        }
+
+        // Eğer en üst ligte değilsek ve ilk 3'teysek ÇIKARIZ
+        if (currentLeagueIndex > 0) {
+          const upperLeague = leagueOrder[currentLeagueIndex - 1];
+          const top3 = sortedTable.slice(0, 3).map(r => r.clubId);
+          top3.forEach(cid => {
+            newClubLeagues[cid] = upperLeague;
+            promotedClubs.push(cid);
+          });
+
+          // Üst ligden rastgele 3 takımı kendi ligimize düşür (Yer açmak için)
+          const upperLeagueClubs = ChampionMasterData.clubs.filter(c => state.clubLeagues[c.id] === upperLeague || (!state.clubLeagues[c.id] && c.leagueId === upperLeague));
+          if (upperLeagueClubs.length >= 3) {
+             const relegatedDown = upperLeagueClubs.sort(() => Math.random() - 0.5).slice(0, 3);
+             relegatedDown.forEach(c => {
+               newClubLeagues[c.id] = myLeagueId;
+               relegatedClubs.push(c.id);
+             });
+          }
+        }
+
+        // Haber Olarak Ekle
+        get().addNews({
+          id: `news_eos_${Date.now()}`,
+          date: `${state.date.day}/${state.date.month}/${state.date.year}`,
+          subject: "Sezon Sona Erdi",
+          sender: "Kulüp Başkanı",
+          content: endMessage + ` Toplam ${formatMoney(prizeMoney)} ödül kazandık.`,
+          read: false,
+          type: "info"
+        });
+
+        // Finans ve Menajer İtibarı Güncellemesi
+        const newBalance = state.finances.balance + prizeMoney;
+        const newManagerRep = Math.max(0, Math.min(100, state.manager.reputation + reputationChange));
+
+        // Yeni Sezon İçin Reset (Hafta 1'e dön, Fikstürü yeniden oluştur vb.)
+        // Yeni ligimiz ne oldu?
+        const nextLeagueId = newClubLeagues[state.myClubId];
+        const newFixtures = GameEngine.generateFixtures(nextLeagueId);
+        const newLeagueTable = GameEngine.generateLeagueTable(nextLeagueId).map(row => {
+           // Eğer takım bu lige yeni düştüyse/çıktıysa tablodaki ID'si olmayabilir, onu baştan üretiyoruz zaten
+           return row; // GameEngine generateLeagueTable eski leagueId'yi kullanıyor. Onu da güncellemeliyiz.
+        });
+
+        // Düzeltme: generateLeagueTable'i newClubLeagues'e göre yapmalıyız.
+        const currentClubsInNextLeague = ChampionMasterData.clubs.filter(c => newClubLeagues[c.id] === nextLeagueId);
+        const generatedLeagueTable = currentClubsInNextLeague.map(c => ({
+          clubId: c.id,
+          played: 0, won: 0, drawn: 0, lost: 0,
+          gf: 0, ga: 0, gd: 0, points: 0,
+          form: []
+        })).sort(() => Math.random() - 0.5);
+
+        // Fikstürü de currentClubsInNextLeague'e göre yazmalıyız.
+        // Ama engine'deki generateFixtures leagueId alıyor ve Data'dan çekiyor.
+        // O yüzden engine'i güncellememiz gerekecek. 
+        // Şimdilik state'i güncelleyelim.
+        set((s) => ({
+          clubLeagues: newClubLeagues,
+          finances: {
+            ...s.finances,
+            balance: newBalance,
+          },
+          manager: {
+            ...s.manager,
+            reputation: newManagerRep
+          },
+          week: 1,
+          season: s.season + 1,
+          leagueTable: generatedLeagueTable,
+          fixtures: GameEngine.generateFixturesDynamic(nextLeagueId, newClubLeagues),
+          seasonStats: { played: 0, won: 0, drawn: 0, lost: 0, goalsFor: 0, goalsAgainst: 0, points: 0, cleanSheets: 0 },
+          cupState: TournamentEngine.initCup(ChampionMasterData.clubs)
+        }));
       },
       
       resetGame: () => set(defaultState),

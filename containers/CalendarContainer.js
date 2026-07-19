@@ -3,6 +3,7 @@
 import { useGameStore } from "@/store/gameStore";
 import ChampionMasterData from "@/lib/game/data";
 import { motion, AnimatePresence } from "framer-motion";
+import { ClubLogo } from "@/components/shared/ClubLogo";
 
 export function CalendarContainer() {
   const { fixtures, myClubId } = useGameStore();
@@ -67,9 +68,7 @@ export function CalendarContainer() {
                   <div className="flex items-center justify-center w-full sm:w-1/2 gap-4">
                     <div className="flex-1 flex items-center justify-end gap-3 text-right">
                       <span className={`font-rajdhani font-bold text-lg ${match.homeClubId === myClubId ? 'text-white' : 'text-[#8892b0]'}`}>{home?.name}</span>
-                      <div className="w-8 h-8 rounded-full border border-white/10 flex items-center justify-center text-[8px] font-orbitron font-bold text-white shrink-0" style={{ background: `linear-gradient(135deg, ${home?.colors?.primary}, ${home?.colors?.secondary})` }}>
-                        {home?.shortName.slice(0,3)}
-                      </div>
+                      <ClubLogo club={home} className="w-8 h-8" />
                     </div>
                     
                     <div className="w-20 text-center shrink-0">
@@ -85,9 +84,7 @@ export function CalendarContainer() {
                     </div>
                     
                     <div className="flex-1 flex items-center justify-start gap-3 text-left">
-                      <div className="w-8 h-8 rounded-full border border-white/10 flex items-center justify-center text-[8px] font-orbitron font-bold text-white shrink-0" style={{ background: `linear-gradient(135deg, ${away?.colors?.primary}, ${away?.colors?.secondary})` }}>
-                        {away?.shortName.slice(0,3)}
-                      </div>
+                      <ClubLogo club={away} className="w-8 h-8" />
                       <span className={`font-rajdhani font-bold text-lg ${match.awayClubId === myClubId ? 'text-white' : 'text-[#8892b0]'}`}>{away?.name}</span>
                     </div>
                   </div>

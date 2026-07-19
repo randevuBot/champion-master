@@ -6,6 +6,7 @@ import ChampionMasterData from "@/lib/game/data";
 import { formatMoney } from "@/lib/game/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { GameEngine } from "@/lib/game/engine";
+import { PlayerAvatar } from "@/components/shared/PlayerAvatar";
 
 export function SquadContainer() {
   const { squad, lineup, setLineup, myClubId, formation, setCustomPositions, squadFitness, injured, suspensions, playerStats, season, tactics } = useGameStore();
@@ -167,9 +168,7 @@ export function SquadContainer() {
                 </div>
 
                 <div className="flex justify-center mb-4 relative z-10">
-                  <div className="w-16 h-16 rounded-full bg-[#0a0e1a] border border-white/10 flex items-center justify-center text-3xl shadow-inner">
-                    👤
-                  </div>
+                  <PlayerAvatar player={p} className="w-20 h-20" />
                 </div>
 
                 <div className="text-center relative z-10">

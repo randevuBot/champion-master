@@ -288,7 +288,14 @@ export function TacticsContainer() {
             <div className="text-[10px] text-[#4a5568] tracking-[2px] uppercase mb-1">Takım Gücü</div>
             <div className={`font-orbitron font-bold text-3xl flex items-center gap-2 ${teamStrength >= 80 ? 'text-[#00e676]' : teamStrength >= 70 ? 'text-[#f5c842]' : 'text-[#ff1744]'}`}>
               {teamStrength}
-              {teamStrength < 70 && <span className="text-sm bg-[#ff1744]/20 px-2 py-0.5 rounded text-[#ff1744]">⚠️ Uyumsuz</span>}
+              {teamStrength < 70 && <span className="text-sm bg-[#ff1744]/20 px-2 py-0.5 rounded text-[#ff1744]">⚠️ Zayıf</span>}
+            </div>
+          </div>
+          <div className="w-[1px] h-10 bg-white/5"></div>
+          <div>
+            <div className="text-[10px] text-[#4a5568] tracking-[2px] uppercase mb-1">Takım Uyumu</div>
+            <div className={`font-orbitron font-bold text-3xl flex items-center gap-2 ${(useGameStore.getState().chemistry || 85) >= 80 ? 'text-[#00c8ff]' : (useGameStore.getState().chemistry || 85) >= 60 ? 'text-[#f5c842]' : 'text-[#ff1744]'}`}>
+              {(useGameStore.getState().chemistry || 85)}%
             </div>
           </div>
           <div className="w-[1px] h-10 bg-white/5"></div>

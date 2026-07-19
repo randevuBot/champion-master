@@ -5,14 +5,21 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
 export function InboxContainer() {
-  const { news: messages = [] } = useGameStore();
+  const { news: messages = [], markNewsAsRead } = useGameStore();
   const [selectedMsg, setSelectedMsg] = useState(null);
 
   useEffect(() => {
     if (messages.length > 0 && !selectedMsg) {
-      setSelectedMsg(messages[0]);
+      handleSelectMessage(messages[0]);
     }
   }, [messages, selectedMsg]);
+
+  const handleSelectMessage = (msg) => {
+    setSelectedMsg(msg);
+    if (!msg.read) {
+      markNewsAsRead(msg.id);
+    }
+  };
 
   return (
     <div className="pb-10 h-full flex flex-col">
@@ -37,14 +44,15 @@ export function InboxContainer() {
                 </div>
               ) : (
                 messages.map((msg, idx) => {
-                  const isSelected = selectedMsg === msg;
+                  const isSelected = selectedMsg?.id === msg.id;
+                  const isUnread = !msg.read;
                   return (
                     <motion.div 
                       initial={{ opacity: 0, x: -10 }}
                       animate={{ opacity: 1, x: 0 }}
-                      key={idx} 
-                      onClick={() => setSelectedMsg(msg)}
-                      className={`relative p-4 rounded-xl cursor-pointer transition-all border ${isSelected ? 'border-[#00c8ff]/30 bg-[#00c8ff]/5 shadow-[0_0_15px_rgba(0,200,255,0.1)]' : 'border-transparent hover:bg-white/5'}`}
+                      key={msg.id} 
+                      onClick={() => handleSelectMessage(msg)}
+                      className={`relative p-4 rounded-xl cursor-pointer transition-all border ${isSelected ? 'border-[#00c8ff]/30 bg-[#00c8ff]/5 shadow-[0_0_15px_rgba(0,200,255,0.1)]' : 'border-transparent hover:bg-white/5'} ${isUnread ? 'bg-white/[0.03]' : 'opacity-80'}`}
                     >
                       {isSelected && (
                         <motion.div
@@ -55,9 +63,12 @@ export function InboxContainer() {
                       )}
                       
                       <div className="flex justify-between items-start mb-1">
-                        <div className="text-[10px] text-[#00c8ff] font-bold tracking-widest uppercase truncate">{msg.sender || 'Yönetim'}</div>
+                        <div className={`text-[10px] font-bold tracking-widest uppercase truncate flex items-center gap-2 ${isUnread ? 'text-[#00c8ff]' : 'text-[#8892b0]'}`}>
+                          {isUnread && <span className="w-2 h-2 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)] inline-block"></span>}
+                          {msg.sender || 'Yönetim'}
+                        </div>
                       </div>
-                      <div className="text-[14px] font-bold text-white mb-1 leading-tight">{msg.subject}</div>
+                      <div className={`text-[14px] mb-1 leading-tight ${isUnread ? 'font-bold text-white' : 'font-medium text-[#8892b0]'}`}>{msg.subject}</div>
                       <div className="text-[12px] text-[#8892b0] truncate">{msg.body}</div>
                     </motion.div>
                   );
