@@ -269,10 +269,10 @@ export function TacticsContainer() {
   };
 
   const getRatingColor = (overall) => {
-    if (overall >= 85) return 'text-[#f5c842]';
-    if (overall >= 75) return 'text-[#00e676]';
-    if (overall >= 65) return 'text-[#00c8ff]';
-    return 'text-[#8892b0]';
+    if (overall >= 85) return 'text-gold';
+    if (overall >= 75) return 'text-green';
+    if (overall >= 65) return 'text-primary';
+    return 'text-muted-foreground';
   };
 
   return (
@@ -280,27 +280,27 @@ export function TacticsContainer() {
       <div className="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h2 className="text-[32px] font-rajdhani font-bold tracking-wide text-white mb-1">Taktik ve Formasyon</h2>
-          <p className="text-[#8892b0] text-[15px]">Oyuncuları sahada dilediğiniz yere sürükleyerek kendi sisteminizi yaratın</p>
+          <p className="text-muted-foreground text-[15px]">Oyuncuları sahada dilediğiniz yere sürükleyerek kendi sisteminizi yaratın</p>
         </div>
 
-        <div className="bg-[#141b2d] border border-white/5 p-4 rounded-2xl shadow-lg flex items-center gap-6">
+        <div className="bg-card border border-white/5 p-4 rounded-2xl shadow-lg flex items-center gap-6">
           <div>
-            <div className="text-[10px] text-[#4a5568] tracking-[2px] uppercase mb-1">Takım Gücü</div>
-            <div className={`font-orbitron font-bold text-3xl flex items-center gap-2 ${teamStrength >= 80 ? 'text-[#00e676]' : teamStrength >= 70 ? 'text-[#f5c842]' : 'text-[#ff1744]'}`}>
+            <div className="text-[10px] text-muted tracking-[2px] uppercase mb-1">Takım Gücü</div>
+            <div className={`font-orbitron font-bold text-3xl flex items-center gap-2 ${teamStrength >= 80 ? 'text-green' : teamStrength >= 70 ? 'text-gold' : 'text-destructive'}`}>
               {teamStrength}
-              {teamStrength < 70 && <span className="text-sm bg-[#ff1744]/20 px-2 py-0.5 rounded text-[#ff1744]">⚠️ Zayıf</span>}
+              {teamStrength < 70 && <span className="text-sm bg-destructive/20 px-2 py-0.5 rounded text-destructive">⚠️ Zayıf</span>}
             </div>
           </div>
           <div className="w-[1px] h-10 bg-white/5"></div>
           <div>
-            <div className="text-[10px] text-[#4a5568] tracking-[2px] uppercase mb-1">Takım Uyumu</div>
-            <div className={`font-orbitron font-bold text-3xl flex items-center gap-2 ${(useGameStore.getState().chemistry || 85) >= 80 ? 'text-[#00c8ff]' : (useGameStore.getState().chemistry || 85) >= 60 ? 'text-[#f5c842]' : 'text-[#ff1744]'}`}>
+            <div className="text-[10px] text-muted tracking-[2px] uppercase mb-1">Takım Uyumu</div>
+            <div className={`font-orbitron font-bold text-3xl flex items-center gap-2 ${(useGameStore.getState().chemistry || 85) >= 80 ? 'text-primary' : (useGameStore.getState().chemistry || 85) >= 60 ? 'text-gold' : 'text-destructive'}`}>
               {(useGameStore.getState().chemistry || 85)}%
             </div>
           </div>
           <div className="w-[1px] h-10 bg-white/5"></div>
           <div>
-            <div className="text-[10px] text-[#4a5568] tracking-[2px] uppercase mb-1">Diziliş</div>
+            <div className="text-[10px] text-muted tracking-[2px] uppercase mb-1">Diziliş</div>
             <div className="font-orbitron font-bold text-xl text-white">{formation}</div>
           </div>
         </div>
@@ -310,14 +310,14 @@ export function TacticsContainer() {
         <motion.div 
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-[#0a0e1a]/90 backdrop-blur-md rounded-2xl border border-[#00c8ff]/30 shadow-[0_0_20px_rgba(0,200,255,0.2)] p-6 mb-6 relative"
+          className="bg-background/90 backdrop-blur-md rounded-2xl border border-primary/30 shadow-[0_0_20px_rgba(0,200,255,0.2)] p-6 mb-6 relative"
         >
-          <button onClick={() => setAiAnalysis(null)} className="absolute top-4 right-4 text-[#8892b0] hover:text-white">✕</button>
+          <button onClick={() => setAiAnalysis(null)} className="absolute top-4 right-4 text-muted-foreground hover:text-white">✕</button>
           <div className="flex items-center gap-3 mb-3">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-r from-[#00c8ff] to-[#7c3aed] flex items-center justify-center text-xl shadow-[0_0_15px_rgba(0,200,255,0.4)]">🤖</div>
+            <div className="w-10 h-10 rounded-full bg-gradient-to-r from-primary to-[#7c3aed] flex items-center justify-center text-xl shadow-[0_0_15px_rgba(0,200,255,0.4)]">🤖</div>
             <h3 className="font-rajdhani font-bold text-xl text-white">Yapay Zeka Yardımcı Antrenör</h3>
           </div>
-          <div className="text-[#e8eaf6] text-sm leading-relaxed whitespace-pre-wrap">
+          <div className="text-foreground text-sm leading-relaxed whitespace-pre-wrap">
             {aiAnalysis}
           </div>
         </motion.div>
@@ -327,9 +327,9 @@ export function TacticsContainer() {
         
         {/* Left Side: Pitch */}
         <div className="lg:col-span-2 flex flex-col">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4 bg-[#141b2d] p-4 rounded-2xl border border-white/5 shadow-lg">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4 bg-card p-4 rounded-2xl border border-white/5 shadow-lg">
             <select 
-              className="bg-[#0a0e1a] border border-white/10 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-[#00c8ff] font-bold tracking-wide cursor-pointer w-full sm:w-auto"
+              className="bg-background border border-white/10 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-primary font-bold tracking-wide cursor-pointer w-full sm:w-auto"
               value={formation}
               onChange={(e) => {
                 setFormation(e.target.value);
@@ -346,7 +346,7 @@ export function TacticsContainer() {
             </select>
             
             <select 
-              className="bg-[#0a0e1a] border border-white/10 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-[#7c3aed] font-bold tracking-wide cursor-pointer w-full sm:w-auto"
+              className="bg-background border border-white/10 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-[#7c3aed] font-bold tracking-wide cursor-pointer w-full sm:w-auto"
               value={tactics?.style || 'balanced'}
               onChange={(e) => handleTacticChange(e.target.value)}
             >
@@ -362,7 +362,7 @@ export function TacticsContainer() {
               <button 
                 onClick={handleAskAI}
                 disabled={isLoadingAi}
-                className="flex-1 sm:flex-none px-6 py-2.5 rounded-xl border border-[#00c8ff]/50 bg-gradient-to-r from-[#00c8ff]/20 to-[#0090b8]/20 text-[#00c8ff] hover:bg-[#00c8ff]/30 font-bold text-xs uppercase tracking-widest shadow-[0_0_15px_rgba(0,200,255,0.1)] transition-colors flex items-center justify-center gap-2"
+                className="flex-1 sm:flex-none px-6 py-2.5 rounded-xl border border-primary/50 bg-gradient-to-r from-primary/20 to-primary-dark/20 text-primary hover:bg-primary/30 font-bold text-xs uppercase tracking-widest shadow-[0_0_15px_rgba(0,200,255,0.1)] transition-colors flex items-center justify-center gap-2"
               >
                 {isLoadingAi ? 'Analiz Ediliyor...' : '🤖 YZ Yorumu Al'}
               </button>
@@ -423,9 +423,9 @@ export function TacticsContainer() {
                     onTap={() => handleSlotClick(idx)}
                     className="flex flex-col items-center group cursor-grab active:cursor-grabbing relative touch-none select-none"
                   >
-                    <div className={`w-10 h-10 md:w-12 md:h-12 bg-[#141b2d] rounded-full flex items-center justify-center font-orbitron font-bold transition-all shadow-[0_4px_15px_rgba(0,0,0,0.5)] z-10
-                      ${isSelected ? 'ring-4 ring-[#f5c842] scale-110 shadow-[0_0_20px_rgba(245,200,66,0.6)]' : 'border border-[#00c8ff]/50 hover:scale-110 hover:border-[#00c8ff]'}
-                      ${isWrongPos ? 'bg-[#ff1744]/20 border-[#ff1744]' : isAltPos ? 'bg-yellow-500/20 border-yellow-500' : ''}
+                    <div className={`w-10 h-10 md:w-12 md:h-12 bg-card rounded-full flex items-center justify-center font-orbitron font-bold transition-all shadow-[0_4px_15px_rgba(0,0,0,0.5)] z-10
+                      ${isSelected ? 'ring-4 ring-[#f5c842] scale-110 shadow-[0_0_20px_rgba(245,200,66,0.6)]' : 'border border-primary/50 hover:scale-110 hover:border-primary'}
+                      ${isWrongPos ? 'bg-destructive/20 border-destructive' : isAltPos ? 'bg-yellow-500/20 border-yellow-500' : ''}
                     `}>
                       {player ? (
                         <span className={getRatingColor(player.overall)}>{player.overall}</span>
@@ -434,7 +434,7 @@ export function TacticsContainer() {
                       )}
                     </div>
                     {isWrongPos && (
-                      <div className="absolute -top-2 -right-2 bg-[#ff1744] text-white text-[8px] font-bold px-1 rounded-sm z-20 shadow-lg">⚠️</div>
+                      <div className="absolute -top-2 -right-2 bg-destructive text-white text-[8px] font-bold px-1 rounded-sm z-20 shadow-lg">⚠️</div>
                     )}
                     {isAltPos && (
                       <div className="absolute -top-2 -right-2 bg-yellow-500 text-white text-[8px] font-bold px-1 rounded-sm z-20 shadow-lg">⚠️</div>
@@ -444,7 +444,7 @@ export function TacticsContainer() {
                         <div className="mt-1 bg-black/80 backdrop-blur-sm border border-white/10 px-2 py-0.5 rounded text-[10px] font-bold text-white tracking-widest uppercase truncate max-w-[70px] pointer-events-none">
                           {player.lastName}
                         </div>
-                        <div className="text-[9px] text-[#00c8ff] font-bold tracking-widest mt-0.5 bg-[#00c8ff]/10 px-1 rounded flex gap-1 pointer-events-none">
+                        <div className="text-[9px] text-primary font-bold tracking-widest mt-0.5 bg-primary/10 px-1 rounded flex gap-1 pointer-events-none">
                           <span className="opacity-50">{getDynamicBand(pos.y)}</span>
                           <span>{player.position}</span>
                         </div>
@@ -462,9 +462,9 @@ export function TacticsContainer() {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: 20 }}
-                  className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/80 backdrop-blur-md px-6 py-3 rounded-full border border-[#f5c842] shadow-[0_0_20px_rgba(245,200,66,0.3)] z-30 pointer-events-none"
+                  className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/80 backdrop-blur-md px-6 py-3 rounded-full border border-gold shadow-[0_0_20px_rgba(245,200,66,0.3)] z-30 pointer-events-none"
                 >
-                  <span className="text-[#f5c842] font-bold text-sm tracking-wide">Değiştirmek için başka bir oyuncuya tıklayın</span>
+                  <span className="text-gold font-bold text-sm tracking-wide">Değiştirmek için başka bir oyuncuya tıklayın</span>
                 </motion.div>
               )}
             </AnimatePresence>
@@ -473,9 +473,9 @@ export function TacticsContainer() {
 
         {/* Right Side: Reserves */}
         <div className="flex flex-col gap-6">
-          <div className="bg-[#141b2d]/80 backdrop-blur-md rounded-2xl border border-white/5 shadow-lg flex-1 overflow-hidden flex flex-col max-h-[800px]">
+          <div className="bg-card/80 backdrop-blur-md rounded-2xl border border-white/5 shadow-lg flex-1 overflow-hidden flex flex-col max-h-[800px]">
             <div className="px-6 py-4 border-b border-white/5 bg-black/20 flex justify-between items-center">
-              <span className="font-rajdhani font-bold text-lg tracking-wider text-[#e8eaf6] uppercase">Yedekler ({reserves.length})</span>
+              <span className="font-rajdhani font-bold text-lg tracking-wider text-foreground uppercase">Yedekler ({reserves.length})</span>
             </div>
             <div className="p-4 flex-1 overflow-y-auto custom-scrollbar flex flex-col gap-2">
               <AnimatePresence>
@@ -486,23 +486,23 @@ export function TacticsContainer() {
                     animate={{ opacity: 1, x: 0 }}
                     key={p.id} 
                     onClick={() => handleReserveClick(p.id)}
-                    className={`flex justify-between items-center p-3 rounded-xl border cursor-pointer transition-all ${selectedReserveId === p.id ? 'bg-[#f5c842]/10 border-[#f5c842] shadow-[0_0_15px_rgba(245,200,66,0.2)] scale-[1.02]' : 'bg-white/5 border-white/5 hover:bg-white/10 hover:border-white/20'}`}
+                    className={`flex justify-between items-center p-3 rounded-xl border cursor-pointer transition-all ${selectedReserveId === p.id ? 'bg-gold/10 border-gold shadow-[0_0_15px_rgba(245,200,66,0.2)] scale-[1.02]' : 'bg-white/5 border-white/5 hover:bg-white/10 hover:border-white/20'}`}
                   >
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-[#0a0e1a] flex items-center justify-center text-xs border border-white/10 shadow-inner">👤</div>
+                      <div className="w-8 h-8 rounded-full bg-background flex items-center justify-center text-xs border border-white/10 shadow-inner">👤</div>
                       <div>
                         <div className="text-sm font-bold text-white leading-tight">{p.lastName}</div>
                         <div className="flex items-center gap-1 mt-0.5">
-                          <div className="text-[10px] text-[#00c8ff] font-bold tracking-widest bg-[#00c8ff]/10 px-1.5 py-0.5 rounded inline-block">{p.position}</div>
+                          <div className="text-[10px] text-primary font-bold tracking-widest bg-primary/10 px-1.5 py-0.5 rounded inline-block">{p.position}</div>
                           {p.alternatePositions && p.alternatePositions.length > 0 && (
-                            <div className="text-[9px] text-[#8892b0] bg-white/5 border border-white/10 px-1.5 py-0.5 rounded inline-block truncate max-w-[60px]">
+                            <div className="text-[9px] text-muted-foreground bg-white/5 border border-white/10 px-1.5 py-0.5 rounded inline-block truncate max-w-[60px]">
                               {p.alternatePositions.join(', ')}
                             </div>
                           )}
                         </div>
                       </div>
                     </div>
-                    <div className="font-orbitron font-bold text-[#f5c842] text-lg">{p.overall}</div>
+                    <div className="font-orbitron font-bold text-gold text-lg">{p.overall}</div>
                   </motion.div>
                 ))}
               </AnimatePresence>

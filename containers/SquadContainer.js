@@ -57,10 +57,10 @@ export function SquadContainer() {
   };
 
   const getRatingColor = (overall) => {
-    if (overall >= 85) return 'text-[#f5c842] drop-shadow-[0_0_8px_rgba(245,200,66,0.5)]';
-    if (overall >= 75) return 'text-[#00e676] drop-shadow-[0_0_8px_rgba(0,230,118,0.5)]';
-    if (overall >= 65) return 'text-[#00c8ff] drop-shadow-[0_0_8px_rgba(0,200,255,0.5)]';
-    return 'text-[#8892b0]';
+    if (overall >= 85) return 'text-gold drop-shadow-[0_0_8px_rgba(245,200,66,0.5)]';
+    if (overall >= 75) return 'text-green drop-shadow-[0_0_8px_rgba(0,230,118,0.5)]';
+    if (overall >= 65) return 'text-primary drop-shadow-[0_0_8px_rgba(0,200,255,0.5)]';
+    return 'text-muted-foreground';
   };
 
   const tabs = [
@@ -76,19 +76,19 @@ export function SquadContainer() {
       <div className="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h2 className="text-[32px] font-rajdhani font-bold tracking-wide text-white mb-1">Kadro Yönetimi</h2>
-          <p className="text-[#8892b0] text-[15px]">Maç kadrosunu belirle ve oyuncularını analiz et</p>
+          <p className="text-muted-foreground text-[15px]">Maç kadrosunu belirle ve oyuncularını analiz et</p>
         </div>
         
-        <div className="flex items-center gap-4 bg-[#141b2d] border border-white/5 p-4 rounded-2xl shadow-lg">
+        <div className="flex items-center gap-4 bg-card border border-white/5 p-4 rounded-2xl shadow-lg">
           <div className="text-center">
-            <div className="text-[10px] text-[#4a5568] tracking-[2px] uppercase">Seçili</div>
+            <div className="text-[10px] text-muted tracking-[2px] uppercase">Seçili</div>
             <div className="font-orbitron font-bold text-2xl text-white">
-              <span className={lineup.length === 11 ? "text-[#00e676]" : "text-[#00c8ff]"}>{lineup.length}</span><span className="text-[#4a5568]">/11</span>
+              <span className={lineup.length === 11 ? "text-green" : "text-primary"}>{lineup.length}</span><span className="text-muted">/11</span>
             </div>
           </div>
           <div className="w-[1px] h-10 bg-white/5"></div>
           <div className="text-center">
-            <div className="text-[10px] text-[#4a5568] tracking-[2px] uppercase">Kadro</div>
+            <div className="text-[10px] text-muted tracking-[2px] uppercase">Kadro</div>
             <div className="font-orbitron font-bold text-2xl text-white">{myPlayers.length}</div>
           </div>
         </div>
@@ -100,12 +100,12 @@ export function SquadContainer() {
             <button 
               key={tab.id}
               onClick={() => setFilter(tab.id)}
-              className={`relative px-4 sm:px-6 py-2.5 rounded-full text-xs sm:text-sm font-bold tracking-wider uppercase transition-colors z-10 flex-1 sm:flex-none text-center ${filter === tab.id ? 'text-white' : 'text-[#8892b0] hover:text-[#e8eaf6] bg-[#141b2d] border border-white/5'}`}
+              className={`relative px-4 sm:px-6 py-2.5 rounded-full text-xs sm:text-sm font-bold tracking-wider uppercase transition-colors z-10 flex-1 sm:flex-none text-center ${filter === tab.id ? 'text-white' : 'text-muted-foreground hover:text-foreground bg-card border border-white/5'}`}
             >
               {filter === tab.id && (
                 <motion.div
                   layoutId="squad-tab-active"
-                  className="absolute inset-0 bg-gradient-to-r from-[#00c8ff] to-[#0090b8] rounded-full -z-10 shadow-[0_0_15px_rgba(0,200,255,0.4)]"
+                  className="absolute inset-0 bg-gradient-to-r from-primary to-primary-dark rounded-full -z-10 shadow-[0_0_15px_rgba(0,200,255,0.4)]"
                   transition={{ type: "spring", stiffness: 300, damping: 30 }}
                 />
               )}
@@ -116,7 +116,7 @@ export function SquadContainer() {
         
         <button 
           onClick={autoFillLineup}
-          className="shrink-0 px-6 py-2.5 rounded-xl border border-[#f5c842]/50 bg-gradient-to-r from-[#f5c842]/20 to-[#d4a017]/20 text-[#f5c842] hover:bg-[#f5c842]/30 font-bold text-sm tracking-wide shadow-[0_0_15px_rgba(245,200,66,0.1)] transition-colors flex items-center justify-center gap-2"
+          className="shrink-0 px-6 py-2.5 rounded-xl border border-gold/50 bg-gradient-to-r from-gold/20 to-[#d4a017]/20 text-gold hover:bg-gold/30 font-bold text-sm tracking-wide shadow-[0_0_15px_rgba(245,200,66,0.1)] transition-colors flex items-center justify-center gap-2"
         >
           <span>⚡</span> Otomatik Kur
         </button>
@@ -134,15 +134,15 @@ export function SquadContainer() {
                 exit={{ opacity: 0, scale: 0.9 }}
                 transition={{ duration: 0.2 }}
                 key={p.id} 
-                className={`relative bg-[#141b2d]/80 backdrop-blur-md rounded-2xl p-4 cursor-pointer overflow-hidden transition-all duration-300 ${isStarting ? 'border border-[#00c8ff] shadow-[0_0_20px_rgba(0,200,255,0.2)] ring-1 ring-[#00c8ff]/50' : 'border border-white/5 hover:border-white/20 hover:-translate-y-1'}`}
+                className={`relative bg-card/80 backdrop-blur-md rounded-2xl p-4 cursor-pointer overflow-hidden transition-all duration-300 ${isStarting ? 'border border-primary shadow-[0_0_20px_rgba(0,200,255,0.2)] ring-1 ring-[#00c8ff]/50' : 'border border-white/5 hover:border-white/20 hover:-translate-y-1'}`}
                 onClick={() => toggleLineup(p.id)}
               >
                 {/* Glow Background if selected */}
-                {isStarting && <div className="absolute inset-0 bg-[#00c8ff]/5"></div>}
+                {isStarting && <div className="absolute inset-0 bg-primary/5"></div>}
                 
                 {/* Starting 11 Badge */}
                 {isStarting && (
-                  <div className="absolute top-0 right-0 bg-[#00c8ff] text-black font-bold text-[9px] px-3 py-1 rounded-bl-lg tracking-widest shadow-[0_0_10px_rgba(0,200,255,0.5)] z-10">
+                  <div className="absolute top-0 right-0 bg-primary text-black font-bold text-[9px] px-3 py-1 rounded-bl-lg tracking-widest shadow-[0_0_10px_rgba(0,200,255,0.5)] z-10">
                     İLK 11
                   </div>
                 )}
@@ -158,7 +158,7 @@ export function SquadContainer() {
                     {p.alternatePositions && p.alternatePositions.length > 0 && (
                       <div className="flex gap-1">
                         {p.alternatePositions.map((alt, i) => (
-                          <div key={i} className="text-[9px] bg-white/5 border border-white/10 text-[#8892b0] px-1.5 py-0.5 rounded shadow-sm">
+                          <div key={i} className="text-[9px] bg-white/5 border border-white/10 text-muted-foreground px-1.5 py-0.5 rounded shadow-sm">
                             {alt}
                           </div>
                         ))}
@@ -173,29 +173,29 @@ export function SquadContainer() {
 
                 <div className="text-center relative z-10">
                   <div className="font-rajdhani font-bold text-lg text-white leading-tight mb-1 truncate">{p.lastName}</div>
-                  <div className="text-[10px] text-[#8892b0] tracking-[1px] uppercase mb-3 truncate">{p.firstName}</div>
+                  <div className="text-[10px] text-muted-foreground tracking-[1px] uppercase mb-3 truncate">{p.firstName}</div>
                   
                   <div className="grid grid-cols-2 gap-1 border-t border-white/5 pt-3 mb-3">
                     <div>
-                      <div className="text-[9px] text-[#4a5568] uppercase tracking-wider">Yaş</div>
-                      <div className="font-bold text-[#e8eaf6] text-xs">{p.age}</div>
+                      <div className="text-[9px] text-muted uppercase tracking-wider">Yaş</div>
+                      <div className="font-bold text-foreground text-xs">{p.age}</div>
                     </div>
                     <div>
-                      <div className="text-[9px] text-[#4a5568] uppercase tracking-wider">Değer</div>
-                      <div className="font-bold text-[#e8eaf6] text-xs">€{(p.value / 1000000).toFixed(1)}M</div>
+                      <div className="text-[9px] text-muted uppercase tracking-wider">Değer</div>
+                      <div className="font-bold text-foreground text-xs">€{(p.value / 1000000).toFixed(1)}M</div>
                     </div>
                   </div>
                   
                   {/* Fitness Bar */}
                   <div className="border-t border-white/5 pt-2">
                     <div className="flex justify-between items-center mb-1">
-                      <span className="text-[9px] text-[#4a5568] uppercase tracking-wider">Kondisyon</span>
-                      <span className={`text-[9px] font-bold ${(!squadFitness[p.id] || squadFitness[p.id] >= 80) ? 'text-[#00e676]' : squadFitness[p.id] >= 60 ? 'text-yellow-400' : 'text-red-400'}`}>
+                      <span className="text-[9px] text-muted uppercase tracking-wider">Kondisyon</span>
+                      <span className={`text-[9px] font-bold ${(!squadFitness[p.id] || squadFitness[p.id] >= 80) ? 'text-green' : squadFitness[p.id] >= 60 ? 'text-yellow-400' : 'text-red-400'}`}>
                         {squadFitness[p.id] || 100}%
                       </span>
                     </div>
                     <div className="h-1 w-full bg-black/50 rounded-full overflow-hidden">
-                      <div className={`h-full ${(!squadFitness[p.id] || squadFitness[p.id] >= 80) ? 'bg-gradient-to-r from-[#00e676] to-[#00b25c]' : squadFitness[p.id] >= 60 ? 'bg-yellow-500' : 'bg-red-500'}`} style={{ width: `${squadFitness[p.id] || 100}%` }}></div>
+                      <div className={`h-full ${(!squadFitness[p.id] || squadFitness[p.id] >= 80) ? 'bg-gradient-to-r from-green to-[#00b25c]' : squadFitness[p.id] >= 60 ? 'bg-yellow-500' : 'bg-red-500'}`} style={{ width: `${squadFitness[p.id] || 100}%` }}></div>
                     </div>
                   </div>
                 </div>
@@ -206,7 +206,7 @@ export function SquadContainer() {
       </motion.div>
       
       {filteredPlayers.length === 0 && (
-        <div className="text-center py-20 text-[#8892b0] border border-white/5 border-dashed rounded-2xl bg-[#141b2d]/30">
+        <div className="text-center py-20 text-muted-foreground border border-white/5 border-dashed rounded-2xl bg-card/30">
           Bu filtreye uygun oyuncu bulunamadı.
         </div>
       )}

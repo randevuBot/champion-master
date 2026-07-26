@@ -24,12 +24,12 @@ export function ClientLayout({ children }) {
   }, [mounted, pathname, isPlaying, router]);
 
   if (!mounted) {
-    return <div className="bg-[#080c14] w-screen h-screen" />;
+    return <div className="bg-surface w-screen h-screen" />;
   }
 
   if (isPlaying) {
     return (
-      <div className="flex h-screen bg-[#0a0e1a] text-[#e8eaf6] font-inter overflow-hidden selection:bg-[#00c8ff]/30">
+      <div className="flex h-screen bg-background text-foreground font-inter overflow-hidden selection:bg-primary/30">
         {/* Desktop sidebar — always visible on lg+ */}
         <div className="hidden lg:flex shrink-0">
           <Sidebar />
@@ -77,7 +77,7 @@ export function ClientLayout({ children }) {
   }
 
   return (
-    <div className="bg-[#080c14] min-h-screen text-white font-inter selection:bg-[#00c8ff]/30 overflow-x-hidden">
+    <div className="bg-surface min-h-screen text-white font-inter selection:bg-primary/30 overflow-x-hidden">
       {children}
     </div>
   );

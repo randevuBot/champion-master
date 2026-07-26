@@ -25,20 +25,20 @@ export function InboxContainer() {
     <div className="pb-10 h-full flex flex-col">
       <div className="mb-6">
         <h2 className="text-[32px] font-rajdhani font-bold tracking-wide text-white mb-1">Gelen Kutusu</h2>
-        <p className="text-[#8892b0] text-[15px]">Medya, yönetim ve personelden gelen mesajlar</p>
+        <p className="text-muted-foreground text-[15px]">Medya, yönetim ve personelden gelen mesajlar</p>
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-12 gap-6 flex-1 min-h-[600px]">
         {/* Left Side: Message List */}
-        <div className="md:col-span-4 bg-[#141b2d]/80 backdrop-blur-md rounded-2xl border border-white/5 shadow-lg overflow-hidden flex flex-col max-h-[700px]">
+        <div className="md:col-span-4 bg-card/80 backdrop-blur-md rounded-2xl border border-white/5 shadow-lg overflow-hidden flex flex-col max-h-[700px]">
           <div className="px-6 py-4 border-b border-white/5 bg-black/20 flex justify-between items-center">
-            <span className="font-rajdhani font-bold text-lg tracking-wider text-[#e8eaf6] uppercase">Mesajlar ({messages.length})</span>
+            <span className="font-rajdhani font-bold text-lg tracking-wider text-foreground uppercase">Mesajlar ({messages.length})</span>
           </div>
           
           <div className="flex-1 overflow-y-auto custom-scrollbar p-2 space-y-1">
             <AnimatePresence>
               {messages.length === 0 ? (
-                <div className="text-center py-10 text-[#8892b0]">
+                <div className="text-center py-10 text-muted-foreground">
                   <div className="text-4xl mb-3 opacity-30 grayscale">📭</div>
                   Mesajınız yok.
                 </div>
@@ -52,24 +52,24 @@ export function InboxContainer() {
                       animate={{ opacity: 1, x: 0 }}
                       key={msg.id} 
                       onClick={() => handleSelectMessage(msg)}
-                      className={`relative p-4 rounded-xl cursor-pointer transition-all border ${isSelected ? 'border-[#00c8ff]/30 bg-[#00c8ff]/5 shadow-[0_0_15px_rgba(0,200,255,0.1)]' : 'border-transparent hover:bg-white/5'} ${isUnread ? 'bg-white/[0.03]' : 'opacity-80'}`}
+                      className={`relative p-4 rounded-xl cursor-pointer transition-all border ${isSelected ? 'border-primary/30 bg-primary/5 shadow-[0_0_15px_rgba(0,200,255,0.1)]' : 'border-transparent hover:bg-white/5'} ${isUnread ? 'bg-white/[0.03]' : 'opacity-80'}`}
                     >
                       {isSelected && (
                         <motion.div
                           layoutId="inbox-active"
-                          className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-3/4 bg-[#00c8ff] rounded-r-full shadow-[0_0_10px_#00c8ff]"
+                          className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-3/4 bg-primary rounded-r-full shadow-[0_0_10px_var(--color-primary)]"
                           transition={{ type: "spring", stiffness: 300, damping: 30 }}
                         />
                       )}
                       
                       <div className="flex justify-between items-start mb-1">
-                        <div className={`text-[10px] font-bold tracking-widest uppercase truncate flex items-center gap-2 ${isUnread ? 'text-[#00c8ff]' : 'text-[#8892b0]'}`}>
+                        <div className={`text-[10px] font-bold tracking-widest uppercase truncate flex items-center gap-2 ${isUnread ? 'text-primary' : 'text-muted-foreground'}`}>
                           {isUnread && <span className="w-2 h-2 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)] inline-block"></span>}
                           {msg.sender || 'Yönetim'}
                         </div>
                       </div>
-                      <div className={`text-[14px] mb-1 leading-tight ${isUnread ? 'font-bold text-white' : 'font-medium text-[#8892b0]'}`}>{msg.subject}</div>
-                      <div className="text-[12px] text-[#8892b0] truncate">{msg.body}</div>
+                      <div className={`text-[14px] mb-1 leading-tight ${isUnread ? 'font-bold text-white' : 'font-medium text-muted-foreground'}`}>{msg.subject}</div>
+                      <div className="text-[12px] text-muted-foreground truncate">{msg.body}</div>
                     </motion.div>
                   );
                 })
@@ -79,9 +79,9 @@ export function InboxContainer() {
         </div>
 
         {/* Right Side: Message Content */}
-        <div className="md:col-span-8 bg-[#141b2d]/80 backdrop-blur-md rounded-2xl border border-white/5 shadow-lg overflow-hidden flex flex-col max-h-[700px]">
+        <div className="md:col-span-8 bg-card/80 backdrop-blur-md rounded-2xl border border-white/5 shadow-lg overflow-hidden flex flex-col max-h-[700px]">
           {!selectedMsg ? (
-            <div className="flex-1 flex flex-col items-center justify-center text-[#8892b0]">
+            <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground">
               <div className="text-6xl mb-4 opacity-30 grayscale">✉️</div>
               <p>Görüntülemek için sol menüden bir mesaj seçin.</p>
             </div>
@@ -94,16 +94,16 @@ export function InboxContainer() {
               className="flex-1 flex flex-col"
             >
               <div className="p-8 border-b border-white/5 bg-black/20 relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-32 h-32 bg-[#00c8ff]/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none"></div>
+                <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none"></div>
                 <h3 className="text-2xl font-rajdhani font-bold text-white mb-2">{selectedMsg.subject}</h3>
                 <div className="flex items-center gap-2 text-sm">
-                  <div className="w-6 h-6 rounded-full bg-[#0a0e1a] border border-white/10 flex items-center justify-center text-[10px]">👤</div>
-                  <span className="text-[#00c8ff] font-bold tracking-wide uppercase text-xs">{selectedMsg.sender || 'Yönetim'}</span>
+                  <div className="w-6 h-6 rounded-full bg-background border border-white/10 flex items-center justify-center text-[10px]">👤</div>
+                  <span className="text-primary font-bold tracking-wide uppercase text-xs">{selectedMsg.sender || 'Yönetim'}</span>
                 </div>
               </div>
               
               <div className="p-8 flex-1 overflow-y-auto custom-scrollbar">
-                <div className="text-[#e8eaf6] leading-relaxed text-[15px] whitespace-pre-wrap">
+                <div className="text-foreground leading-relaxed text-[15px] whitespace-pre-wrap">
                   {selectedMsg.body}
                 </div>
               </div>
@@ -111,7 +111,7 @@ export function InboxContainer() {
               <div className="p-6 bg-black/20 border-t border-white/5 flex flex-wrap justify-end gap-3">
                 {selectedMsg.type === 'decision' ? (
                   selectedMsg.handled ? (
-                    <div className="text-[#00c8ff] font-bold text-sm border border-[#00c8ff]/30 bg-[#00c8ff]/10 px-6 py-2.5 rounded-xl w-full text-center">
+                    <div className="text-primary font-bold text-sm border border-primary/30 bg-primary/10 px-6 py-2.5 rounded-xl w-full text-center">
                       Kararınız İletildi: {selectedMsg.handledActionLabel}
                     </div>
                   ) : (
@@ -126,7 +126,7 @@ export function InboxContainer() {
                             if (updatedMsg) setSelectedMsg(updatedMsg);
                           }}
                           className={`px-6 py-2.5 rounded-xl font-bold text-sm tracking-wide transition-all ${
-                            action.value === 'accept' ? 'bg-gradient-to-r from-[#00e676] to-[#00b25c] text-white hover:scale-105 shadow-[0_0_15px_rgba(0,230,118,0.3)]' :
+                            action.value === 'accept' ? 'bg-gradient-to-r from-green to-[#00b25c] text-white hover:scale-105 shadow-[0_0_15px_rgba(0,230,118,0.3)]' :
                             action.value === 'reject' || action.value === 'drop' ? 'bg-gradient-to-r from-[#ff1744] to-red-600 text-white hover:scale-105 shadow-[0_0_15px_rgba(255,23,68,0.3)]' :
                             'bg-white/10 text-white hover:bg-white/20 border border-white/20'
                           }`}
@@ -139,7 +139,7 @@ export function InboxContainer() {
                 ) : (
                   <>
                     <button className="px-6 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white font-bold text-sm tracking-wide hover:bg-white/10 transition-colors">Arşivle</button>
-                    <button className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-[#00c8ff] to-[#0090b8] text-white font-bold text-sm tracking-wide shadow-[0_0_15px_rgba(0,200,255,0.3)] hover:scale-105 transition-transform">Sil</button>
+                    <button className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-primary to-primary-dark text-white font-bold text-sm tracking-wide shadow-[0_0_15px_rgba(0,200,255,0.3)] hover:scale-105 transition-transform">Sil</button>
                   </>
                 )}
               </div>

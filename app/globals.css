@@ -15,6 +15,7 @@
 
   --color-primary: #00c8ff;
   --color-primary-foreground: #ffffff;
+  --color-primary-dark: #0090b8;
 
   --color-secondary: #0f1629;
   --color-secondary-foreground: #8892b0;
@@ -39,6 +40,7 @@
 
   --color-gold: #f5c842;
   --color-green: #00e676;
+  --color-surface: #080c14;
 
   --font-inter: var(--font-inter);
   --font-orbitron: var(--font-orbitron);
@@ -54,6 +56,8 @@
   --popover-foreground: #e8eaf6;
   --primary: #00c8ff;
   --primary-foreground: #ffffff;
+  --primary-dark: #0090b8;
+  --surface: #080c14;
   --secondary: #0f1629;
   --secondary-foreground: #8892b0;
   --muted: #1a2340;
